@@ -1,5 +1,7 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+
 #include <inttypes.h>
 #include <math.h>
 
@@ -24,10 +26,21 @@ private:
     const int16_t _r;
 };
 
+// Windows does not define "cos" as constexpr yet... :(
+#ifdef _WIN32
+	constexpr uint8_t cellSize = 9;
+	const double slopeX = cos(15 * M_PI / 180.0) * cellSize;
 
-constexpr uint8_t cellSize = 9;
-constexpr double slopeX = cos(15 * M_PI / 180.0) * cellSize;
-constexpr Offset offsetOf(int32_t x, int32_t y)
-{
-    return Offset(x / slopeX, y / cellSize);
-}
+	const Offset offsetOf(int32_t x, int32_t y)
+	{
+		return Offset(x / slopeX, y / cellSize);
+	}
+#else
+	constexpr uint8_t cellSize = 9;
+	constexpr double slopeX = cos(15 * M_PI / 180.0) * cellSize;
+
+	constexpr Offset offsetOf(int32_t x, int32_t y)
+	{
+		return Offset(x / slopeX, y / cellSize);
+	}
+#endif

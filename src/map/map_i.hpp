@@ -22,7 +22,7 @@ Cell<E>* Map<E>::addTo(int16_t q, int16_t r, E e)
 }
 
 template <typename E>
-Cell<E>* Map<E>::addTo(Offset&& offset, E e)
+Cell<E>* Map<E>::addTo(const Offset&& offset, E e)
 {
     auto cell = getOrCreate(std::move(offset), true);
     // cell->add(e);
@@ -36,7 +36,7 @@ Cell<E>* Map<E>::getOrCreate(int16_t q, int16_t r, bool siblings, uint8_t* creat
 }
 
 template <typename E>
-Cell<E>* Map<E>::getOrCreate(Offset&& offset, bool siblings, uint8_t* createCount)
+Cell<E>* Map<E>::getOrCreate(const Offset&& offset, bool siblings, uint8_t* createCount)
 {
     auto it = _cells.find(offset.hash());
 

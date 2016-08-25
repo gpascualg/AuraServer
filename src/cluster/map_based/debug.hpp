@@ -9,11 +9,13 @@
 #define LOG_LEVEL       LOG_ALL
 
 
-#define LOG_HELPER(fmt, ...)    printf(fmt "\n%s", __VA_ARGS__)
-#define LOG_ALWAYS(...)         LOG_HELPER(__VA_ARGS__, "")
+// Expand is a trick for MSVC __VA_ARGS__ to work :(
+#define EXPAND(x)				x
+#define LOG_HELPER(fmt, ...)    EXPAND(printf(fmt "\n%s", __VA_ARGS__))
+#define LOG_ALWAYS(...)         EXPAND(LOG_HELPER(__VA_ARGS__, ""))
 
-#ifdef DEBUG
-    #define LOG(lvl, ...)       (lvl & LOG_LEVEL) && LOG_HELPER(__VA_ARGS__, "")
+#ifndef NDEBUG
+    #define LOG(lvl, ...)       ((lvl & LOG_LEVEL) && EXPAND(LOG_HELPER(__VA_ARGS__, "")))
 #else
     #define LOG(lvl, ...)
 #endif

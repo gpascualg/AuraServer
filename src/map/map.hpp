@@ -16,10 +16,10 @@ public:
 
     Cell<E>* addTo2D(int16_t x, int16_t y, E e);
     Cell<E>* addTo(int16_t q, int16_t r, E e);
-    Cell<E>* addTo(Offset&& offset, E e);
+    Cell<E>* addTo(const Offset&& offset, E e);
 
     Cell<E>* getOrCreate(int16_t q, int16_t r, bool siblings = false, uint8_t* createCount = nullptr);
-    Cell<E>* getOrCreate(Offset&& offset, bool siblings = false, uint8_t* createCount = nullptr);
+    Cell<E>* getOrCreate(const Offset&& offset, bool siblings = false, uint8_t* createCount = nullptr);
 
     void setSiblings(Cell<E>* cell);
 
