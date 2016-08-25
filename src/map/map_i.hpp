@@ -105,6 +105,7 @@ void Map<E>::setSiblings(Cell<E>* cell)
             cell->_siblings[getter.idx] = sibling;
             sibling->_siblings[getter.reciprocal] = cell;
 
+            // FIXME: This might not be true :/ Only + 1 if (sibling->_siblings[getter.reciprocal]) was nullptr
             sibling->_siblingCount = sibling->_siblingCount >= 6 ? 6 : sibling->_siblingCount + 1;
         }
 
