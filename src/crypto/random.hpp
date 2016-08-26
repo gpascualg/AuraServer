@@ -10,8 +10,8 @@ public:
 	Random(uint32_t state0, uint32_t state1);
 
 private:
-	void generate();
-	void algorithm();
+	void generateSeeds();
+	void generateSimple();
 
 private:
 	uint16_t _counter1;
