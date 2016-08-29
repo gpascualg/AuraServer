@@ -1,1 +1,3 @@
 [Bb]uild/
+*.pyc
+compile_commands.json

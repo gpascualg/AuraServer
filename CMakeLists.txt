@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 2.8)
 project(DBOSupreme CXX)
 
 # -[ Macros
-include(cmake/Macros.cmake)
+include(deps/Shinzui/cmake/Macros.cmake)
+include(deps/Shinzui/cmake/Configure.cmake)
+ResetAllTargets()
 
 
 # -[ Configuring
 option(DBOS_BUILD_TESTS     "Build server tests"        ON)
-option(DBOS_DEBUG           "Build with debug mode"     ON)
+option(DBOS_DEBUG           "Build with debug mode"     OFF)
 
 # -[ Build type
 set(BUILD_TYPE_STR "Choose the type of
@@ -30,4 +32,5 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 # -[ Subdirectories
+add_subdirectory(deps)
 add_subdirectory(src)

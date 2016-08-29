@@ -1,6 +1,3 @@
-# -[ Add shinzui
-add_subdirectory(shinzui)
-
 # -[ Add DBOSupreme
 add_subdirectory(dbos)
 
