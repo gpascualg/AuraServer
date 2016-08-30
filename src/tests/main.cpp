@@ -4,12 +4,6 @@
 
 #include <stdio.h>
 
-void debug(int32_t x, int32_t y)
-{
-    auto o = offsetOf(x, y);
-    printf("(%3d, %3d) -> (%2d, %2d, %2d)\n", x, y, o.q(), o.r(), o.s());
-}
-
 class Entity
 {};
 

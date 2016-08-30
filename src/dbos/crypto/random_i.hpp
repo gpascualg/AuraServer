@@ -7,7 +7,9 @@ inline uint32_t shrd(uint32_t r1, uint32_t r2, uint8_t b)
 }
 
 template <uint32_t NumTables, uint32_t LoopsPerTable>
-Random<NumTables, LoopsPerTable>::Random(uint32_t _state0, uint32_t _state1)
+Random<NumTables, LoopsPerTable>::Random(uint32_t state0, uint32_t state1):
+	_state0(state0), _state1(state1),
+	_counter1(0), _counter2(0)
 {
 	generateSeeds();
 }
@@ -17,7 +19,7 @@ void Random<NumTables, LoopsPerTable>::generateSeeds()
 {
 	for (uint8_t i = 0; i < NumTables; ++i)
 	{
-		for (uint8_t k = 0; k < LoopsPerTable; +k)
+		for (uint8_t k = 0; k < LoopsPerTable; ++k)
 		{
 			generateSimple();
 			_table[_counter1++] = _state0;
@@ -28,14 +30,13 @@ void Random<NumTables, LoopsPerTable>::generateSeeds()
 		uint32_t mask = ESI;
 		uint32_t ECX = 0;
 		uint32_t EDX = 0x80000000;
-		uint32_t EBX, EBP;
 
 		uint32_t idx = _counter2 + 6;
 
 		for (uint8_t k = 3; k < LoopsPerTable; k += 7)
 		{
-			EBX = _table[idx];
-			EBP = _table[idx + 1];
+			uint32_t EBX = _table[idx];
+			uint32_t EBP = _table[idx + 1];
 
 			EBP &= mask;
 			EBX &= ESI;
@@ -67,12 +68,11 @@ void Random<NumTables, LoopsPerTable>::generateSimple()
 {
 	uint32_t EAX = _state0;
 	uint32_t EDX = _state1;
-	uint32_t EBP, EBX, ESI, ECX;
 
 	for (uint8_t i = 0; i < 0x40; ++i)
 	{
-		EBP = EDX;
-		EBX = EAX;
+		uint32_t EBP = EDX;
+		uint32_t EBX = EAX;
 
 		EBX = shrd(EBX, EBP, 2);
 		EBP >>= 2;
@@ -80,8 +80,8 @@ void Random<NumTables, LoopsPerTable>::generateSimple()
 		EBX ^= EAX;
 
 		EBX = shrd(EBX, EBP, 3);
-		ECX = EDX;
-		ESI = EAX;
+		uint32_t ECX = EDX;
+		uint32_t ESI = EAX;
 		EBP >>= 3;
 		ESI = shrd(ESI, ECX, 1);
 
