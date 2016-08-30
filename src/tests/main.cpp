@@ -20,15 +20,13 @@ int main()
     map.addTo2D(40, 40, new Entity());
 
     LOG_ALWAYS("CREATING");
-    /*
-    for (int x = 0; x < 10000; x += rand() / (float)RAND_MAX * 10)
+    for (int x = 0; x < 100000; x += rand() / (float)RAND_MAX * 10)
     {
         for (int y = 0; y < 10000; y += rand() / (float)RAND_MAX * 10)
         {
             map.addTo2D(x, y, new Entity());
         }
     }
-    */
 
     LOG_ALWAYS("UPDATING...");
     Cluster<Cell<Entity*>*>::get()->update();
@@ -41,7 +39,7 @@ int main()
 
     LOG(LOG_DEBUG, "UpdateCount == CellCount, %d == %d", updateCount, cellCount);
 
-    LOG_ALWAYS("DONE\n");
+    LOG_ALWAYS("DONE (%d cells)\n", map.size());
     getchar();
 
     return 0;
