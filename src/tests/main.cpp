@@ -20,11 +20,11 @@ int main()
     map.addTo2D(40, 40, new Entity());
 
     LOG_ALWAYS("CREATING");
-    for (int x = 0; x < 100000; x += rand() / (float)RAND_MAX * 10)
+    for (float x = 0; x < 100000; x += rand() / (float)RAND_MAX * 10)
     {
-        for (int y = 0; y < 10000; y += rand() / (float)RAND_MAX * 10)
+        for (float y = 0; y < 10000; y += rand() / (float)RAND_MAX * 10)
         {
-            map.addTo2D(x, y, new Entity());
+            map.addTo2D((int16_t)x, (int16_t)y, new Entity());
         }
     }
 
