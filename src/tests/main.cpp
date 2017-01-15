@@ -1,20 +1,26 @@
 #include "cell.hpp"
 #include "cluster.hpp"
 #include "map.hpp"
+#include "map_aware_entity.hpp"
 
 #include <stdio.h>
 #include <chrono>
 
 
-class Entity
-{};
+class Entity : public MapAwareEntity
+{
+    uint32_t id() { return 0; }
+
+    void onAdded(Cell* cell) {}
+    void onRemoved(Cell* cell) {}
+};
 
 int main()
 {
     typedef std::chrono::high_resolution_clock Time;
     typedef std::chrono::nanoseconds ns;
 
-    Map<Entity*> map(0, 0, 200, 50);
+    Map map;
 
 /*
     LOG_ALWAYS("TESTING CLUSTER MERGE");
@@ -38,10 +44,12 @@ int main()
             }
         }
 
+        map.runScheduledOperations();
+
         LOG_ALWAYS("UPDATING %d CELLS", map.size());
         {
             auto t0 = Time::now();
-            Cluster<Cell<Entity*>*>::get()->update(0);
+            map.cluster()->update(0);
             auto t1 = Time::now();
 
             LOG_ALWAYS("\tDONE IN %f",  std::chrono::duration_cast<ns>(t1 - t0).count() / 1000000.0f);
@@ -53,7 +61,7 @@ int main()
         LOG_ALWAYS("UPDATING %d CELLS", map.size());
         {
             auto t0 = Time::now();
-            Cluster<Cell<Entity*>*>::get()->update(0);
+            map.cluster()->update(0);
             auto t1 = Time::now();
 
             LOG_ALWAYS("\tDONE IN %f",  std::chrono::duration_cast<ns>(t1 - t0).count() / 1000000.0f);
