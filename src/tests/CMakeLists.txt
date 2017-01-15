@@ -1,3 +1,4 @@
+CreateTarget(tests)
 project(tests)
 
 set(SOURCE_FOLDERS

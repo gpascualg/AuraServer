@@ -1,3 +1,4 @@
+CreateTarget(TARGET DBOSupreme)
 project(DBOSupreme)
 
 set(SOURCE_FOLDERS

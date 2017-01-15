@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(DBOSupreme CXX)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/deps/Shinzui/cmake-utils)
+
 # -[ Macros
-include(deps/Shinzui/cmake/Macros.cmake)
-include(deps/Shinzui/cmake/Configure.cmake)
+include(Macros)
+include(Configure)
+include(External)
 ResetAllTargets()
 
 
