@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(DBOSupreme CXX)
+project(AuraServer CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/deps/Shinzui/cmake-utils)
 
@@ -11,15 +11,15 @@ ResetAllTargets()
 
 
 # -[ Configuring
-option(DBOS_BUILD_TESTS     "Build server tests"        ON)
-option(DBOS_DEBUG           "Build with debug mode"     OFF)
+option(AuraServer_BUILD_TESTS     "Build server tests"        ON)
+option(AuraServer_DEBUG           "Build with debug mode"     OFF)
 
 # -[ Build type
 set(BUILD_TYPE_STR "Choose the type of
     build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug
     Release RelWithDebInfo MinSizeRel.")
 
-if (DBOS_DEBUG)
+if (AuraServer_DEBUG)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING ${BUILD_TYPE_STR} FORCE)
 elseif (CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING ${BUILD_TYPE_STR} FORCE)

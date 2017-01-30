@@ -15,11 +15,11 @@ endforeach()
 
 AddDependency(
     TARGET tests
-    DEPENDENCY DBOSupreme_LIB
+    DEPENDENCY AuraServer_LIB
 )
 
 BuildNow(
     TARGET tests
     EXECUTABLE ON
-    OUTPUT_NAME DBOSupreme_Tests
+    OUTPUT_NAME AuraServer_Tests
 )

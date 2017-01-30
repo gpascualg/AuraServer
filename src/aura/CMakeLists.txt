@@ -1,5 +1,5 @@
-CreateTarget(TARGET DBOSupreme)
-project(DBOSupreme)
+CreateTarget(TARGET AuraServer)
+project(AuraServer)
 
 set(SOURCE_FOLDERS
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -8,13 +8,13 @@ set(SOURCE_FOLDERS
 
 foreach(folder ${SOURCE_FOLDERS})
     AddToSources(
-        TARGET DBOSupreme
+        TARGET AuraServer
         SRC_PATH ${folder}
         GLOB_SEARCH ".hpp;.cpp"
     )
 
     AddToSources(
-        TARGET DBOSupreme_LIB
+        TARGET AuraServer_LIB
         SRC_PATH ${folder}
         GLOB_SEARCH ".hpp;.cpp"
     )
@@ -23,26 +23,26 @@ endforeach()
 # -[ Build executable
 
 AddDependency(
-    TARGET DBOSupreme
+    TARGET AuraServer
     DEPENDENCY Shinzui
 )
 
 BuildNow(
-    TARGET DBOSupreme
+    TARGET AuraServer
     EXECUTABLE ON
-    OUTPUT_NAME DBOSupreme
+    OUTPUT_NAME AuraServer
 )
 
 # -[ Build library if tests are enabled
-if (DBOS_BUILD_TESTS)
+if (AuraServer_BUILD_TESTS)
     AddDependency(
-        TARGET DBOSupreme_LIB
+        TARGET AuraServer_LIB
         DEPENDENCY Shinzui
     )
 
     BuildNow(
-        TARGET DBOSupreme_LIB
+        TARGET AuraServer_LIB
         STATIC_LIB ON
-        OUTPUT_NAME DBOSupreme_Tests
+        OUTPUT_NAME AuraServer_Tests
     )
 endif()

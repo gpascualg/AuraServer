@@ -1,7 +1,7 @@
 # -[ Add DBOSupreme
-add_subdirectory(dbos)
+add_subdirectory(aura)
 
 # -[ Unless disabled, add tests
-if (DBOS_BUILD_TESTS)
+if (AuraServer_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
