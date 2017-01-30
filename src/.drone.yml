@@ -1,0 +1,41 @@
+pipeline:
+  setup:
+    image: gcc:latest
+    commands:
+      - mkdir -p build
+
+  restore-cache:
+    image: drillster/drone-volume-cache
+    restore: true
+    mount:
+      - build
+    volumes:
+      - /tmp/cache:/cache
+
+  build:
+    image: gcc:latest
+    commands:
+      - cd build
+      - apt-get update
+      - apt-get -y install cmake lcov
+      - cmake -DSHINZUI_BUILD_TESTS=ON -DSHINZUI_LINT=ON -DSHINZUI_COVERAGE=ON ..
+      - make
+      - make ShinzuiLint
+      - make ShinzuiCoverage
+      - cp coverage.info.cleaned ../lcov.info
+      - cd ..
+
+  rebuild-cache:
+    image: drillster/drone-volume-cache
+    rebuild: true
+    mount:
+      - build
+    volumes:
+      - /tmp/cache:/cache
+
+  publish:
+    image: plugins/coverage
+    server: http://g-build-server.asuscomm.com:8001
+    pattern: lcov.info
+    environment:
+      - GITHUB_TOKEN=7f45169aecbef333a40544ee8349b96560747252

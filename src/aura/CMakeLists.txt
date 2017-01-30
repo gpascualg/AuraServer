@@ -21,6 +21,11 @@ foreach(folder ${SOURCE_FOLDERS})
 endforeach()
 
 # -[ Build executable
+set(DEFINES
+    BOOST_ERROR_CODE_HEADER_ONLY
+    BOOST_SYSTEM_NO_DEPRECATED 
+    BOOST_ALL_NO_LIB
+)
 
 AddDependency(
     TARGET AuraServer
@@ -30,6 +35,7 @@ AddDependency(
 BuildNow(
     TARGET AuraServer
     EXECUTABLE ON
+    DEFINES ${DEFINES}
     OUTPUT_NAME AuraServer
 )
 
@@ -43,6 +49,7 @@ if (AuraServer_BUILD_TESTS)
     BuildNow(
         TARGET AuraServer_LIB
         STATIC_LIB ON
+        DEFINES ${DEFINES}
         OUTPUT_NAME AuraServer_Tests
     )
 endif()
