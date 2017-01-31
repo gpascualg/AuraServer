@@ -21,9 +21,9 @@ class Entity : public MapAwareEntity
 {
     uint32_t id() { return 0; }
 
-    void onAdded(Cell* cell) override {}
-    void onRemoved(Cell* cell) override {}
-    void update(uint64_t elapsed) override {}
+    void onAdded(Cell* cell) override { MapAwareEntity::onAdded(cell); }
+    void onRemoved(Cell* cell) override { MapAwareEntity::onRemoved(cell); }
+    void update(uint64_t elapsed) override { MapAwareEntity::update(elapsed); }
 };
 
 int main()
