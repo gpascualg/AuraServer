@@ -11,8 +11,9 @@ class Entity : public MapAwareEntity
 {
     uint32_t id() { return 0; }
 
-    void onAdded(Cell* cell) {}
-    void onRemoved(Cell* cell) {}
+    void onAdded(Cell* cell) override {}
+    void onRemoved(Cell* cell) override {}
+    void update(uint64_t elapsed) override {}
 };
 
 int main()
@@ -68,7 +69,7 @@ int main()
         }
     }
 
-    LOG_ALWAYS("UpdateCount == CellCount, %d == %d", updateCount, cellCount);
+    //LOG_ALWAYS("UpdateCount == CellCount, %d == %d", updateCount, cellCount);
 
     getchar();
 

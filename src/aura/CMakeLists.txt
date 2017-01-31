@@ -3,6 +3,8 @@ project(AuraServer)
 
 set(SOURCE_FOLDERS
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/server
+    ${CMAKE_CURRENT_SOURCE_DIR}/client
 )
 
 foreach(folder ${SOURCE_FOLDERS})
