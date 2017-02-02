@@ -9,7 +9,7 @@ public:
     using Client::Client;
 
     inline void setId(uint64_t id) { _id = id; }
-    inline uint64_t getId() { return _id; }
+    inline uint64_t id() override { return _id; }
 
 private:
     uint64_t _id;

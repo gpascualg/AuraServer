@@ -11,13 +11,13 @@
 
 class AuraClient;
 
-class AuraServer : public Server
+class AuraServer : public Server<AuraClient>
 {
 public:
     using Server::Server;
 
-    void handleAccept(Client* client, const boost::system::error_code& error) override;
-    void handleRead(Client* client, const boost::system::error_code& error, size_t size) override;
+    void handleAccept(AuraClient* client, const boost::system::error_code& error) override;
+    void handleRead(AuraClient* client, const boost::system::error_code& error, size_t size) override;
 
 protected:
     std::unordered_map<uint64_t, AuraClient*> _clients;

@@ -32,7 +32,7 @@ int main()
     typedef std::chrono::nanoseconds ns;
 
     Map map;
-    AuraServer server(12345, (boost::object_pool<Client>*)new boost::object_pool<AuraClient>());
+    AuraServer server(12345);
 
     server.startAccept();
     server.updateIO();
