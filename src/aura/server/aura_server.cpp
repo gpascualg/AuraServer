@@ -41,7 +41,7 @@ void AuraServer::handleRead(AuraClient* client, const boost::system::error_code&
 #if IF_LOG(LOG_PACKETS) || 1
     if (!error)
     {
-        printf("%d - READ: %d\n", time(NULL), size);
+        printf("%" PRId64 " - READ: %d\n", time(NULL), size);
         for (uint16_t i = 0; i < client->packet()->size(); ++i)
         {
             printf("%.2X ", (uint8_t)client->packet()->data()[i]);
@@ -67,6 +67,9 @@ void AuraServer::handleRead(AuraClient* client, const boost::system::error_code&
             {
                 disconnect = true;
             }
+            
+            // No data in packet
+            reset = len == 0;
             break;
 
         case 3:
@@ -78,6 +81,11 @@ void AuraServer::handleRead(AuraClient* client, const boost::system::error_code&
     {
         if (reset)
         {
+            // Force read 2 bytes now (opcode)
+            len = 2;
+
+            LOG(LOG_DEBUG, "[PACKET DONE]");
+
             // TODO(gpascualg): Add packet to parsing list
             Packet* packet = Packet::create();
             *packet << uint16_t{ 0x0001 } << uint16_t{ 0x0 };
