@@ -28,7 +28,7 @@ void AuraServer::handleAccept(AuraClient* client, const boost::system::error_cod
     *packet << uint16_t{ 0x1 };
     *packet << uint8_t{ 0x8 };
 
-    boost::asio::async_write(client->socket(), packet->sendBuffer(), 
+    boost::asio::async_write(client->socket(), packet->sendBuffer(),
         [packet](const boost::system::error_code & error, std::size_t size)
         {
             onSend(error, size, packet);
@@ -67,7 +67,7 @@ void AuraServer::handleRead(AuraClient* client, const boost::system::error_code&
             {
                 disconnect = true;
             }
-            
+
             // No data in packet
             reset = len == 0;
             break;
@@ -127,7 +127,7 @@ void AuraServer::handleRead(AuraClient* client, const boost::system::error_code&
             *packet << uint16_t{ 0x0001 } << uint16_t{ 0x0 };
             *packet << uint16_t{ 0x7BCD } << uint16_t{ 0x2 } << uint16_t{ 0x8080 };
 
-            boost::asio::async_write(client->socket(), packet->sendBuffer(), 
+            boost::asio::async_write(client->socket(), packet->sendBuffer(),
                 [packet](const boost::system::error_code & error, std::size_t size)
                 {
                     onSend(error, size, packet);
