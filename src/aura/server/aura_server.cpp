@@ -7,6 +7,8 @@
 #include "cluster.hpp"
 #include "map_aware_entity.hpp"
 
+#include <thread>
+
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
