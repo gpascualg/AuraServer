@@ -4,38 +4,38 @@
 #include "map_aware_entity.hpp"
 #include "server.hpp"
 #include "client.hpp"
-
 #include "aura_server.hpp"
-#include "aura_client.hpp"
 
 #include <stdio.h>
 #include <chrono>
 #include <unordered_map>
 #include <mutex>
+#include <thread>
 
 #include <boost/pool/object_pool.hpp>
 #include <boost/asio.hpp>
-
-
-class Entity : public MapAwareEntity
-{
-    uint32_t id() { return 0; }
-
-    void onAdded(Cell* cell) override { MapAwareEntity::onAdded(cell); }
-    void onRemoved(Cell* cell) override { MapAwareEntity::onRemoved(cell); }
-    void update(uint64_t elapsed) override { MapAwareEntity::update(elapsed); }
-};
 
 int main()
 {
     typedef std::chrono::high_resolution_clock Time;
     typedef std::chrono::nanoseconds ns;
 
+#ifdef _MSC_VER
+    HWND console = GetConsoleWindow();
+    RECT r;
+    GetWindowRect(console, &r);
+    MoveWindow(console, r.left, r.top, 900, 300, TRUE);
+#endif
+
     Map map;
     AuraServer server(12345);
 
     server.startAccept();
-    server.updateIO();
+    std::thread mainThread(&AuraServer::mainloop, &server);
+    std::thread ioThread(&AuraServer::updateIO, &server);
+    
+    mainThread.join();
+    ioThread.join();
 
     return 0;
 }
