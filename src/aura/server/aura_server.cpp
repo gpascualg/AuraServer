@@ -123,3 +123,23 @@ void AuraServer::handleRead(Client* client, const boost::system::error_code& err
         client->close();
     }
 }
+
+Client* AuraServer::newClient(boost::asio::io_service* service, uint64_t id)
+{
+    return static_cast<Client*>(_clientPool.construct(service, id));
+}
+
+void AuraServer::destroyClient(Client* client)
+{
+    _clientPool.destroy(static_cast<AuraClient*>(client));
+}
+
+MapAwareEntity* AuraServer::newMapAwareEntity(uint64_t id, Client* client)
+{
+    return static_cast<MapAwareEntity*>(_entityPool.construct(id, client));
+}
+
+void AuraServer::destroyMapAwareEntity(MapAwareEntity* entity)
+{
+    _entityPool.destroy(static_cast<Entity*>(entity));
+}
