@@ -28,7 +28,7 @@ void AuraServer::mainloop()
                     auto packet = Packet::create();
                     *packet << uint16_t{ 0x7BCD } << uint16_t{ 0x0002 } << uint16_t{ 0x8080 };
 
-                    map()->broadcastToSiblings(recv.client->entity()->cell(), packet);
+                    this->map()->broadcastToSiblings(recv.client->entity()->cell(), packet);
 
                     // TODO(gpascualg): Handle packets based on opcode
                     recv.packet->destroy();
