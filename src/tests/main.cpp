@@ -12,8 +12,8 @@ class Entity : public MapAwareEntity
 public:
     using MapAwareEntity::MapAwareEntity;
 
-    void onAdded(Cell* cell, bool isConnect) override {}
-    void onRemoved(Cell* cell, bool isDisconnect) override {}
+    void onAdded(Cell* cell, Cell* old) override {}
+    void onRemoved(Cell* cell, Cell* to) override {}
     void update(uint64_t elapsed) override {}
 };
 
@@ -34,7 +34,7 @@ int main()
     map.addTo2D(40, 40, new Entity());
 */
 
-    map.addTo2D(0, 0, new Entity(0));
+    map.addTo2D(0, 0, new Entity(0), nullptr);
     for (int k = 1; k <= 1000; k *= 2)
     {
         LOG_ALWAYS("CREATING");
@@ -42,7 +42,7 @@ int main()
         {
             for (float y = -5 * k; y < 5 * k; y += rand() / (float)RAND_MAX * 10)
             {
-                map.addTo2D(x, y, new Entity(k));
+                map.addTo2D(x, y, new Entity(k), nullptr);
             }
         }
 
