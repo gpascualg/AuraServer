@@ -11,7 +11,8 @@ class Entity : public MapAwareEntity
 public:
     using MapAwareEntity::MapAwareEntity;
 
-    void onAdded(Cell* cell) override;
+    void onAdded(Cell* cell, Cell* old) override;
+    void onRemoved(Cell* cell, Cell* to) override;
 };
 
 class AuraClient : public Client

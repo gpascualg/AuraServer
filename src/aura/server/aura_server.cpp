@@ -15,28 +15,32 @@
 
 const uint16_t MAX_PACKET_LEN = 1000;
 
-Map map;
 
 void AuraServer::mainloop()
 {
     while (1)
     {
-        map.runScheduledOperations();
-        map.cluster()->update(0);
-        map.cluster()->runScheduledOperations();
-
-        _packets.consume_all([](auto recv)
+        _packets.consume_all([this](auto recv)
             {
-                // TODO(gpascualg): Remove this broadcast placeholder
-                auto packet = Packet::create();
-                *packet << uint16_t{ 0x7BCD } << uint16_t{ 0x0002 } << uint16_t{ 0x8080 };
-                recv.client->entity()->cell()->broadcast(packet, true);
+                if (recv.client->inMap())
+                {
+                    // TODO(gpascualg): Remove this broadcast placeholder
+                    auto packet = Packet::create();
+                    *packet << uint16_t{ 0x7BCD } << uint16_t{ 0x0002 } << uint16_t{ 0x8080 };
 
-                // TODO(gpascualg): Handle packets based on opcode
-                recv.packet->destroy();
+                    map()->broadcastToSiblings(recv.client->entity()->cell(), packet);
+
+                    // TODO(gpascualg): Handle packets based on opcode
+                    recv.packet->destroy();
+                }
+                else
+                {
+                    LOG(LOG_FATAL, "Should not happen to have a broadcast while not in map");
+                }
             }
         );
 
+        map()->update(0);
         runScheduledOperations();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -53,7 +57,12 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
 {
     // Setup entity
     _clients.emplace(client->id(), client);
-    map.addTo(0, 0, client->entity());
+    client->entity()->position().x = rand();
+    client->entity()->position().y = rand();
+
+    LOG(LOG_DEBUG, "Entity spawning at %.0f %.0f", client->entity()->position().x, client->entity()->position().y);
+
+    map()->addTo(client->entity(), nullptr);
 
     // Start receiving!
     Server::handleAccept(client, error);

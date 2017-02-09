@@ -12,8 +12,8 @@ class Entity : public MapAwareEntity
 public:
     using MapAwareEntity::MapAwareEntity;
 
-    void onAdded(Cell* cell) override {}
-    void onRemoved(Cell* cell) override {}
+    void onAdded(Cell* cell, bool isConnect) override {}
+    void onRemoved(Cell* cell, bool isDisconnect) override {}
     void update(uint64_t elapsed) override {}
 };
 
