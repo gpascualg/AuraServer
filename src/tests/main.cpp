@@ -34,15 +34,15 @@ int main()
     map.addTo2D(40, 40, new Entity());
 */
 
-    map.addTo2D(0, 0, new Entity(0), nullptr);
+    map.addTo2D({ 0, 0 }, new Entity(0), nullptr);
     for (int k = 1; k <= 1000; k *= 2)
     {
         LOG_ALWAYS("CREATING");
-        for (float x = -50 * k; x < 50 * k; x += rand() / (float)RAND_MAX * 10)
+        for (float x = (float)(-50 * k); x < (float)(50 * k); x += rand() / (float)RAND_MAX * 10)
         {
-            for (float y = -5 * k; y < 5 * k; y += rand() / (float)RAND_MAX * 10)
+            for (float y = (float)(-5 * k); y < (float)(5 * k); y += rand() / (float)RAND_MAX * 10)
             {
-                map.addTo2D(x, y, new Entity(k), nullptr);
+                map.addTo2D({ x, y }, new Entity(k), nullptr);
             }
         }
 

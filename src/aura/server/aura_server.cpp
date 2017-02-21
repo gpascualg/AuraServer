@@ -6,6 +6,7 @@
 #include "map.hpp"
 #include "cluster.hpp"
 #include "map_aware_entity.hpp"
+#include "motion_master.hpp"
 
 #include <thread>
 
@@ -13,13 +14,23 @@
 #include <boost/system/error_code.hpp>
 
 
-const uint16_t MAX_PACKET_LEN = 1000;
+using TimeBase = std::chrono::milliseconds;
 
+const uint16_t MAX_PACKET_LEN = 1000;
+const TimeBase WORLD_HEART_BEAT = TimeBase(50);
 
 void AuraServer::mainloop()
 {
+    auto lastUpdate = std::chrono::high_resolution_clock::now();
+    auto diff = lastUpdate - lastUpdate; // HACK(gpascualg): Cheaty way to get duration
+    auto prevSleepTime = diff;
+
     while (1)
     {
+        auto now = std::chrono::high_resolution_clock::now();
+        diff = now - lastUpdate;
+        lastUpdate = now;
+
         _packets.consume_all([this](auto recv)
             {
                 if (recv.client->inMap())
@@ -40,10 +51,21 @@ void AuraServer::mainloop()
             }
         );
 
-        map()->update(0);
+        map()->update(diff.count());
         runScheduledOperations();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // Wait for a constant update time
+        if (diff <= WORLD_HEART_BEAT + prevSleepTime)
+        {
+            prevSleepTime = WORLD_HEART_BEAT + prevSleepTime - diff;
+            std::this_thread::sleep_for(prevSleepTime);
+        }
+        else
+        {
+            prevSleepTime = prevSleepTime.zero();
+        }
+
+        LOG(LOG_SERVER_LOOP, "DIFF: %" PRId64 " - SLEEP: %" PRId64, diff, prevSleepTime);
     }
 }
 
@@ -57,12 +79,18 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
 {
     // Setup entity
     _clients.emplace(client->id(), client);
-    client->entity()->position().x = rand();
-    client->entity()->position().y = rand();
 
-    LOG(LOG_DEBUG, "Entity spawning at %.0f %.0f", client->entity()->position().x, client->entity()->position().y);
+    // TODO(gpascualg): Fetch position from DB
+    auto motionMaster = client->entity()->motionMaster();
+    motionMaster->teleport({ client->id(), client->id() });
+    LOG(LOG_DEBUG, "Entity spawning at %.0f %.0f", motionMaster->position().x, motionMaster->position().y);
 
     map()->addTo(client->entity(), nullptr);
+
+    // Send ID
+    Packet* packet = Packet::create();
+    *packet << uint16_t{ 0x0012 } << uint16_t{ 0x0008 } << client->id();
+    client->send(packet);
 
     // Start receiving!
     Server::handleAccept(client, error);

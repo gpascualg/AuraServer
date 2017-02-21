@@ -3,6 +3,7 @@
 #include "debug.hpp"
 #include "map.hpp"
 #include "map_aware_entity.hpp"
+#include "motion_master.hpp"
 #include "packet.hpp"
 #include "server.hpp"
 
@@ -12,7 +13,7 @@ void Entity::onAdded(Cell* cell, Cell* old)
 
     Packet* packet = Packet::create();
     *packet << uint16_t{ 0x0102 } << uint16_t{ 0x0011 } << id() << uint8_t{ 0 };
-    *packet << position().x << position().y;
+    *packet << motionMaster()->position().x << motionMaster()->position().y;
 
     if (!old)
     {
