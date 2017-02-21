@@ -25,6 +25,10 @@ void AuraServer::mainloop()
     auto diff = lastUpdate - lastUpdate; // HACK(gpascualg): Cheaty way to get duration
     auto prevSleepTime = diff;
 
+    _handlers.emplace(PacketOpcodes::OPCODE_SPEED_CHANGE, &AuraServer::handleSpeedChange);
+    _handlers.emplace(PacketOpcodes::OPCODE_FORWARD_CHANGE, &AuraServer::handleForwardChange);
+    _handlers.emplace(PacketOpcodes::OPCODE_MOVEMENT, &AuraServer::handleMovement);
+
     while (1)
     {
         auto now = std::chrono::high_resolution_clock::now();
@@ -35,13 +39,22 @@ void AuraServer::mainloop()
             {
                 if (recv.client->inMap())
                 {
-                    // TODO(gpascualg): Remove this broadcast placeholder
-                    auto packet = Packet::create();
-                    *packet << uint16_t{ 0x7BCD } << uint16_t{ 0x0002 } << uint16_t{ 0x8080 };
+                    // Read packet
+                    uint16_t opcode = recv.packet->read<uint16_t>();
+                    uint16_t len = recv.packet->read<uint16_t>();
 
-                    this->map()->broadcastToSiblings(recv.client->entity()->cell(), packet);
+                    auto handler = _handlers.find((PacketOpcodes)opcode);
+                    if (handler == _handlers.end())
+                    {
+                        //recv.client->close();
+                    }
+                    else
+                    {
+                        (this->*handler->second)(recv.client, recv.packet);
+                    }
+                    
 
-                    // TODO(gpascualg): Handle packets based on opcode
+                    // Back to the pool
                     recv.packet->destroy();
                 }
                 else
@@ -69,10 +82,46 @@ void AuraServer::mainloop()
     }
 }
 
-void onSend(const boost::system::error_code & error, std::size_t size, Packet* packet)
+void AuraServer::handleForwardChange(Client* client, Packet* packet)
 {
-    LOG(LOG_PACKET_SEND, "Written (%d): %d", (int)error.value(), (uint16_t)size);
-    packet->destroy();
+    glm::vec2 forward = { packet->read<float>(), packet->read<float>() };
+    client->entity()->motionMaster()->forward(forward);
+
+    Packet* broadcast = Packet::create();
+    *broadcast << uint16_t{ 0x0A01 } << uint16_t{ 16 };
+    *broadcast << client->id();
+    *broadcast << forward.x << forward.y;
+
+    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+}
+
+void AuraServer::handleMovement(Client* client, Packet* packet)
+{
+    bool isEnd = packet->read<bool>();
+    if (isEnd)
+    {
+        client->entity()->motionMaster()->stop();
+    }
+    else
+    {
+        client->entity()->motionMaster()->move();
+    }
+
+    Packet* broadcast = Packet::create();
+    *broadcast << uint16_t{ 0x0A04 } << uint16_t{ 9 } << client->id() << isEnd;
+
+    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+}
+
+void AuraServer::handleSpeedChange(Client* client, Packet* packet)
+{
+    uint8_t speed = packet->read<uint8_t>();
+    client->entity()->motionMaster()->speed(speed);
+
+    Packet* broadcast = Packet::create();
+    *broadcast << uint16_t{ 0x0A03 } << uint16_t{ 9 } << client->id() << speed;
+
+    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
 
 void AuraServer::handleAccept(Client* client, const boost::system::error_code& error)
