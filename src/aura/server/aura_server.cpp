@@ -25,9 +25,9 @@ void AuraServer::mainloop()
     auto diff = lastUpdate - lastUpdate; // HACK(gpascualg): Cheaty way to get duration
     auto prevSleepTime = diff;
 
-    _handlers.emplace(PacketOpcodes::OPCODE_SPEED_CHANGE, &AuraServer::handleSpeedChange);
+    _handlers.emplace(PacketOpcodes::OPCODE_SPEED_CHANGE,   &AuraServer::handleSpeedChange);
     _handlers.emplace(PacketOpcodes::OPCODE_FORWARD_CHANGE, &AuraServer::handleForwardChange);
-    _handlers.emplace(PacketOpcodes::OPCODE_MOVEMENT, &AuraServer::handleMovement);
+    _handlers.emplace(PacketOpcodes::OPCODE_MOVEMENT,       &AuraServer::handleMovement);
 
     while (1)
     {
