@@ -8,6 +8,7 @@
 #include "map_aware_entity.hpp"
 #include "motion_master.hpp"
 
+#include <inttypes.h>
 #include <thread>
 
 #include <boost/asio.hpp>
@@ -40,8 +41,9 @@ void AuraServer::mainloop()
                 if (recv.client->inMap())
                 {
                     // Read packet
-                    uint16_t opcode = recv.packet->read<uint16_t>();
-                    uint16_t len = recv.packet->read<uint16_t>();
+                    Packet* packet = recv.packet;
+                    uint16_t opcode = packet->read<uint16_t>();
+                    uint16_t len = packet->read<uint16_t>();
 
                     auto handler = _handlers.find((PacketOpcodes)opcode);
                     if (handler == _handlers.end())
@@ -52,7 +54,7 @@ void AuraServer::mainloop()
                     {
                         (this->*handler->second)(recv.client, recv.packet);
                     }
-                    
+
 
                     // Back to the pool
                     recv.packet->destroy();

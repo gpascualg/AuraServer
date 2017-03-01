@@ -63,5 +63,19 @@ protected:
     };
 
     boost::lockfree::queue<Recv, boost::lockfree::capacity<4096>> _packets;
+
+#if defined(_WIN32) || defined(__clang__)
     std::unordered_map<PacketOpcodes, void (AuraServer::*)(Client*, Packet*)> _handlers;
+#else
+    struct EnumClassHash
+    {
+        template <typename T>
+        std::size_t operator()(T t) const
+        {
+            return static_cast<std::size_t>(t);
+        }
+    };
+
+    std::unordered_map<PacketOpcodes, void (AuraServer::*)(Client*, Packet*), EnumClassHash> _handlers;
+#endif
 };
