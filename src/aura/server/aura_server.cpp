@@ -132,8 +132,8 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
 
     // TODO(gpascualg): Fetch position from DB
     auto motionMaster = client->entity()->motionMaster();
-    motionMaster->teleport({ client->id(), client->id() });
-    LOG(LOG_DEBUG, "Entity spawning at %.0f %.0f", motionMaster->position().x, motionMaster->position().y);
+    motionMaster->teleport({ client->id(), 0 });
+    LOG(LOG_DEBUG, "Entity spawning at %.0f %.0f", motionMaster->position().x, 0);
 
     map()->addTo(client->entity(), nullptr);
 
