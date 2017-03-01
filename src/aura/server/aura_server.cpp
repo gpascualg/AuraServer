@@ -89,8 +89,7 @@ void AuraServer::handleForwardChange(Client* client, Packet* packet)
     glm::vec2 forward = { packet->read<float>(), packet->read<float>() };
     client->entity()->motionMaster()->forward(forward);
 
-    Packet* broadcast = Packet::create();
-    *broadcast << uint16_t{ 0x0A01 } << uint16_t{ 16 };
+    Packet* broadcast = Packet::create(0x0A01);
     *broadcast << client->id();
     *broadcast << forward.x << forward.y;
 
@@ -109,8 +108,8 @@ void AuraServer::handleMovement(Client* client, Packet* packet)
         client->entity()->motionMaster()->move();
     }
 
-    Packet* broadcast = Packet::create();
-    *broadcast << uint16_t{ 0x0A04 } << uint16_t{ 9 } << client->id() << isEnd;
+    Packet* broadcast = Packet::create(0x0A04);
+    *broadcast << client->id() << isEnd;
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
@@ -120,8 +119,8 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
     uint8_t speed = packet->read<uint8_t>();
     client->entity()->motionMaster()->speed(speed);
 
-    Packet* broadcast = Packet::create();
-    *broadcast << uint16_t{ 0x0A03 } << uint16_t{ 9 } << client->id() << speed;
+    Packet* broadcast = Packet::create(0x0A03);
+    *broadcast << client->id() << speed;
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
@@ -139,8 +138,8 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     map()->addTo(client->entity(), nullptr);
 
     // Send ID
-    Packet* packet = Packet::create();
-    *packet << uint16_t{ 0x0012 } << uint16_t{ 0x0008 } << client->id();
+    Packet* packet = Packet::create(0x0012);
+    *packet << client->id();
     client->send(packet);
 
     // Start receiving!
