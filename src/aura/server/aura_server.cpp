@@ -23,8 +23,8 @@ const TimeBase WORLD_HEART_BEAT = TimeBase(50);
 void AuraServer::mainloop()
 {
     auto lastUpdate = std::chrono::high_resolution_clock::now();
-    auto diff = lastUpdate - lastUpdate; // HACK(gpascualg): Cheaty way to get duration
-    auto prevSleepTime = diff;
+    auto diff = std::chrono::duration_cast<TimeBase>(lastUpdate - lastUpdate); // HACK(gpascualg): Cheaty way to get duration
+    auto prevSleepTime = std::chrono::duration_cast<TimeBase>(diff);
 
     _handlers.emplace(PacketOpcodes::OPCODE_SPEED_CHANGE,   &AuraServer::handleSpeedChange);
     _handlers.emplace(PacketOpcodes::OPCODE_FORWARD_CHANGE, &AuraServer::handleForwardChange);
@@ -33,7 +33,7 @@ void AuraServer::mainloop()
     while (1)
     {
         auto now = std::chrono::high_resolution_clock::now();
-        diff = now - lastUpdate;
+        diff = std::chrono::duration_cast<TimeBase>(now - lastUpdate);
         lastUpdate = now;
 
         _packets.consume_all([this](auto recv)
@@ -86,12 +86,12 @@ void AuraServer::mainloop()
 
 void AuraServer::handleForwardChange(Client* client, Packet* packet)
 {
-    glm::vec2 forward = { packet->read<float>(), packet->read<float>() };
+    glm::vec2 forward = packet->read<glm::vec2>();
     client->entity()->motionMaster()->forward(forward);
 
     Packet* broadcast = Packet::create(0x0A01);
     *broadcast << client->id();
-    *broadcast << forward.x << forward.y;
+    *broadcast << forward;
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
@@ -116,11 +116,23 @@ void AuraServer::handleMovement(Client* client, Packet* packet)
 
 void AuraServer::handleSpeedChange(Client* client, Packet* packet)
 {
-    uint8_t speed = packet->read<uint8_t>();
-    client->entity()->motionMaster()->speed(speed);
-
+    auto motionMaster = client->entity()->motionMaster();
+    int8_t speed = packet->read<int8_t>();
+    
     Packet* broadcast = Packet::create(0x0A03);
     *broadcast << client->id() << speed;
+    *broadcast << motionMaster->position();
+
+    motionMaster->speed(speed);
+
+    if (speed != 0)
+    {
+        motionMaster->move();
+    }
+    else
+    {
+        motionMaster->stop();
+    }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
