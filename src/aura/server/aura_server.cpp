@@ -93,12 +93,19 @@ void AuraServer::mainloop()
 
 void AuraServer::handleForwardChange(Client* client, Packet* packet)
 {
-    glm::vec2 forward = packet->read<glm::vec2>();
-    client->entity()->motionMaster()->forward(forward);
+    float speed = packet->read<float>();
+    auto motionMaster = client->entity()->motionMaster();
+    motionMaster->forward(speed);
 
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FORWARD_CHANGE_RESP);
     *broadcast << client->id();
-    *broadcast << forward;
+    *broadcast << speed;
+
+    if (speed == 0)
+    {
+        *broadcast << motionMaster->forward().x;
+        *broadcast << motionMaster->forward().y;
+    }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
