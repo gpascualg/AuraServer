@@ -26,9 +26,12 @@ void AuraServer::mainloop()
     auto diff = std::chrono::duration_cast<TimeBase>(lastUpdate - lastUpdate); // HACK(gpascualg): Cheaty way to get duration
     auto prevSleepTime = std::chrono::duration_cast<TimeBase>(diff);
 
-    _handlers.emplace(PacketOpcodes::OPCODE_SPEED_CHANGE,   &AuraServer::handleSpeedChange);
-    _handlers.emplace(PacketOpcodes::OPCODE_FORWARD_CHANGE, &AuraServer::handleForwardChange);
-    _handlers.emplace(PacketOpcodes::OPCODE_MOVEMENT,       &AuraServer::handleMovement);
+
+    _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { &AuraServer::handleSpeedChange,     HandlerType::NORMAL });
+    _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { &AuraServer::handleForwardChange,   HandlerType::NORMAL });
+    _handlers.emplace(PacketOpcodes::PING,              OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
+    _handlers.emplace(PacketOpcodes::DISCONNECTION,     OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
+
 
     while (1)
     {
@@ -48,11 +51,15 @@ void AuraServer::mainloop()
                     auto handler = _handlers.find((PacketOpcodes)opcode);
                     if (handler == _handlers.end())
                     {
-                        //recv.client->close();
+                        recv.client->close();
                     }
                     else
                     {
-                        (this->*handler->second)(recv.client, recv.packet);
+                        auto& opcodeHandler = handler->second;
+                        if (opcodeHandler.type != HandlerType::NO_CALLBACK)
+                        {
+                            (this->*opcodeHandler.callback)(recv.client, recv.packet);
+                        }
                     }
 
 
@@ -89,27 +96,9 @@ void AuraServer::handleForwardChange(Client* client, Packet* packet)
     glm::vec2 forward = packet->read<glm::vec2>();
     client->entity()->motionMaster()->forward(forward);
 
-    Packet* broadcast = Packet::create(0x0A01);
+    Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FORWARD_CHANGE_RESP);
     *broadcast << client->id();
     *broadcast << forward;
-
-    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
-}
-
-void AuraServer::handleMovement(Client* client, Packet* packet)
-{
-    bool isEnd = packet->read<bool>();
-    if (isEnd)
-    {
-        client->entity()->motionMaster()->stop();
-    }
-    else
-    {
-        client->entity()->motionMaster()->move();
-    }
-
-    Packet* broadcast = Packet::create(0x0A04);
-    *broadcast << client->id() << isEnd;
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
@@ -119,7 +108,7 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
     auto motionMaster = client->entity()->motionMaster();
     int8_t speed = packet->read<int8_t>();
     
-    Packet* broadcast = Packet::create(0x0A03);
+    Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::SPEED_CHANGE_RESP);
     *broadcast << client->id() << speed;
     *broadcast << motionMaster->position();
 
@@ -150,7 +139,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     map()->addTo(client->entity(), nullptr);
 
     // Send ID
-    Packet* packet = Packet::create(0x0012);
+    Packet* packet = Packet::create((uint16_t)PacketOpcodes::SET_ID);
     *packet << client->id();
     client->send(packet);
 

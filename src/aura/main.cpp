@@ -24,6 +24,8 @@ int main()
     HWND console = GetConsoleWindow();
     RECT r;
     GetWindowRect(console, &r);
+    
+    SetWindowPos(console, HWND_TOPMOST, r.left, r.top, 900, 300, SWP_DRAWFRAME | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
     MoveWindow(console, r.left, r.top, 900, 300, TRUE);
 #endif
 

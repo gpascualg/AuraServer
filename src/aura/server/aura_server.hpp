@@ -3,6 +3,7 @@
 #include "server.hpp"
 #include "atomic_autoincrement.hpp"
 #include "aura_client.hpp"
+#include "opcodes.hpp"
 
 #include <boost/lockfree/queue.hpp>
 
@@ -14,21 +15,6 @@ class Client;
 class MapAwareEntity;
 class Packet;
 
-
-enum class PacketOpcodes
-{
-    ENTITY_SPAWN =                  0x0102,
-    OPCODE_FORWARD_CHANGE =         0x0101,
-    OPCODE_FORWARD_CHANGE_RESP =    0x0A01,
-    OPCODE_SPEED_CHANGE =           0x0103,
-    OPCODE_SPEED_CHANGE_RESP =      0x0A03,
-    OPCODE_MOVEMENT =               0x0104,
-    OPCODE_MOVEMENT_RESP =          0x0A04,
-    OPCODE_CHAT =                   0x0011,
-    OPCODE_SET_ID =                 0x0012,
-    OPCODE_PING =                   0x0001,
-    OPCODE_DISCONNECTION =          0x0002
-};
 
 
 class AuraServer : public Server
@@ -42,7 +28,6 @@ public:
     void mainloop();
 
     void handleForwardChange(Client* client, Packet* packet);
-    void handleMovement(Client* client, Packet* packet);
     void handleSpeedChange(Client* client, Packet* packet);
 
     Client* newClient(boost::asio::io_service* service, uint64_t id) override;
@@ -64,8 +49,20 @@ protected:
 
     boost::lockfree::queue<Recv, boost::lockfree::capacity<4096>> _packets;
 
+    enum class HandlerType
+    {
+        NO_CALLBACK,
+        NORMAL
+    };
+
+    struct OpcodeHandler
+    {
+        void (AuraServer::*callback)(Client*, Packet*);
+        HandlerType type;
+    };
+
 #if defined(_WIN32) || defined(__clang__)
-    std::unordered_map<PacketOpcodes, void (AuraServer::*)(Client*, Packet*)> _handlers;
+    std::unordered_map<PacketOpcodes, OpcodeHandler> _handlers;
 #else
     struct EnumClassHash
     {
@@ -76,6 +73,6 @@ protected:
         }
     };
 
-    std::unordered_map<PacketOpcodes, void (AuraServer::*)(Client*, Packet*), EnumClassHash> _handlers;
+    std::unordered_map<PacketOpcodes, OpcodeHandler, EnumClassHash> _handlers;
 #endif
 };
