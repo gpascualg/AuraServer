@@ -48,6 +48,7 @@ protected:
     };
 
     boost::lockfree::queue<Recv, boost::lockfree::capacity<4096>> _packets;
+    boost::lockfree::queue<void(*)(AuraServer*), boost::lockfree::capacity<4096>> _nextTick;
 
     enum class HandlerType
     {

@@ -13,7 +13,7 @@ Packet* Entity::spawnPacket()
 {
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::ENTITY_SPAWN);
     *packet << id() << uint8_t{ 0 };
-    *packet << motionMaster()->position().x << motionMaster()->position().y;
+    *packet << motionMaster()->position();
     *packet << motionMaster()->speed();
     *packet << motionMaster()->forward();
     return packet;

@@ -9,6 +9,7 @@ enum class PacketOpcodes
 
     FORWARD_CHANGE_RESP =           0x0A03,
     SPEED_CHANGE_RESP =             0x0A04,
+    FORWARD_FORCE =                 0x0A05,
     
     PING =                          0x0001,
     DISCONNECTION =                 0x0002,

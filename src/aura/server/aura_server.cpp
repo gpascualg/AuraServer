@@ -7,8 +7,10 @@
 #include "cluster.hpp"
 #include "map_aware_entity.hpp"
 #include "motion_master.hpp"
+#include "movement_generator.hpp"
 
 #include <inttypes.h>
+#include <random>
 #include <thread>
 
 #include <boost/asio.hpp>
@@ -76,6 +78,12 @@ void AuraServer::mainloop()
         map()->update(diff.count());
         runScheduledOperations();
 
+        _nextTick.consume_all([this](auto func) 
+            {
+                func(this);
+            }
+        );
+
         // Wait for a constant update time
         if (diff <= WORLD_HEART_BEAT + prevSleepTime)
         {
@@ -103,8 +111,7 @@ void AuraServer::handleForwardChange(Client* client, Packet* packet)
 
     if (speed == 0)
     {
-        *broadcast << motionMaster->forward().x;
-        *broadcast << motionMaster->forward().y;
+        *broadcast << motionMaster->forward();
     }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
@@ -140,10 +147,28 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
 
     // TODO(gpascualg): Fetch position from DB
     auto motionMaster = client->entity()->motionMaster();
-    motionMaster->teleport({ client->id(), 0 });
-    LOG(LOG_DEBUG, "Entity spawning at %.0f %.0f", motionMaster->position().x, 0);
+    motionMaster->teleport({ client->id(), 0, 0 });
+    //LOG(LOG_DEBUG, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
 
     map()->addTo(client->entity(), nullptr);
+
+    // TODO(gpascualg): Fetch from DB
+    // TODO(gpascualg): Move out of here
+    _nextTick.push([](AuraServer* server)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            // TODO(gpascualg): Move this out to somewhere else
+            static std::default_random_engine randomEngine;
+            static std::uniform_real_distribution<> forwardDist(-1, 1); // rage 0 - 1
+
+            MapAwareEntity* entity = server->newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
+            entity->motionMaster()->teleport({ 0,0,0 });
+            entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
+            entity->motionMaster()->generator(new RandomMovement());
+            server->map()->addTo(entity, nullptr);
+        }
+    });
 
     // Send ID
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::SET_ID);
