@@ -1,10 +1,10 @@
-#include "cell.hpp"
-#include "cluster.hpp"
-#include "map.hpp"
-#include "map_aware_entity.hpp"
-#include "server.hpp"
-#include "client.hpp"
-#include "aura_server.hpp"
+#include "map/cell.hpp"
+#include "map/map-cluster/cluster.hpp"
+#include "map/map.hpp"
+#include "map/map_aware_entity.hpp"
+#include "server/server.hpp"
+#include "server/client.hpp"
+#include "server/aura_server.hpp"
 
 #include <stdio.h>
 #include <chrono>

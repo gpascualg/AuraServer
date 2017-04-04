@@ -21,6 +21,16 @@ foreach(folder ${SOURCE_FOLDERS})
     )
 endforeach()
 
+AddToIncludes(
+    TARGET AuraServer
+    INC_PATH ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+AddToIncludes(
+    TARGET AuraServer_LIB
+    INC_PATH ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # -[ Build executable
 string(LENGTH ${CMAKE_SOURCE_DIR} BASE_DIR_LEN)
 set(DEFINES

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "client.hpp"
-#include "map_aware_entity.hpp"
+#include "server/client.hpp"
+#include "map/map_aware_entity.hpp"
 
 #include <boost/pool/object_pool.hpp>
 

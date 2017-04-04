@@ -1,13 +1,13 @@
-#include "aura_server.hpp"
-#include "debug.hpp"
-#include "packet.hpp"
-#include "cell.hpp"
-#include "client.hpp"
-#include "map.hpp"
-#include "cluster.hpp"
-#include "map_aware_entity.hpp"
-#include "motion_master.hpp"
-#include "movement_generator.hpp"
+#include "server/aura_server.hpp"
+#include "debug/debug.hpp"
+#include "io/packet.hpp"
+#include "map/cell.hpp"
+#include "server/client.hpp"
+#include "map/map.hpp"
+#include "map/map-cluster/cluster.hpp"
+#include "map/map_aware_entity.hpp"
+#include "movement/motion_master.hpp"
+#include "movement/movement_generator.hpp"
 
 #include <inttypes.h>
 #include <random>
@@ -156,7 +156,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // TODO(gpascualg): Move out of here
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
@@ -165,7 +165,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
             MapAwareEntity* entity = server->newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
             entity->motionMaster()->teleport({ 0,0,0 });
             entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
-            entity->motionMaster()->generator(new RandomMovement());
+            //entity->motionMaster()->generator(new RandomMovement());
             server->map()->addTo(entity, nullptr);
         }
     });
