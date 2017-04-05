@@ -165,7 +165,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
             MapAwareEntity* entity = server->newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
             entity->motionMaster()->teleport({ 0,0,0 });
             entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
-            //entity->motionMaster()->generator(new RandomMovement());
+            entity->motionMaster()->generator(new RandomMovement());
             server->map()->addTo(entity, nullptr);
         }
     });
