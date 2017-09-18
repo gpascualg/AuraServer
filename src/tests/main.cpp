@@ -1,7 +1,7 @@
-#include "cell.hpp"
-#include "cluster.hpp"
-#include "map.hpp"
-#include "map_aware_entity.hpp"
+#include "map/cell.hpp"
+#include "map/map-cluster/cluster.hpp"
+#include "map/map.hpp"
+#include "map/map_aware_entity.hpp"
 
 #include <stdio.h>
 #include <chrono>
