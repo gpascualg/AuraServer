@@ -30,6 +30,8 @@ public:
     void handleForwardChange(Client* client, Packet* packet);
     void handleSpeedChange(Client* client, Packet* packet);
 
+    void handleFire(Client* client, Packet* packet);
+
     Client* newClient(boost::asio::io_service* service, uint64_t id) override;
     void destroyClient(Client* client) override;
 

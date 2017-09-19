@@ -10,7 +10,12 @@ enum class PacketOpcodes
     FORWARD_CHANGE_RESP =           0x0A03,
     SPEED_CHANGE_RESP =             0x0A04,
     FORWARD_FORCE =                 0x0A05,
-    
+
+    FIRE_CANNONS =                  0x0201,
+
+    FIRE_CANNONS_RESP =             0x0B01,
+    FIRE_HIT =                      0x0B02,
+
     PING =                          0x0001,
     DISCONNECTION =                 0x0002,
     CHAT =                          0x0011,

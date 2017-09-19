@@ -31,6 +31,7 @@ void AuraServer::mainloop()
 
     _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { &AuraServer::handleSpeedChange,     HandlerType::NORMAL });
     _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { &AuraServer::handleForwardChange,   HandlerType::NORMAL });
+    _handlers.emplace(PacketOpcodes::FIRE_CANNONS,      OpcodeHandler { &AuraServer::handleFire,            HandlerType::NORMAL });
     _handlers.emplace(PacketOpcodes::PING,              OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
     _handlers.emplace(PacketOpcodes::DISCONNECTION,     OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
 
@@ -140,6 +141,41 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
 
+void AuraServer::handleFire(Client* client, Packet* packet)
+{
+    auto motionMaster = client->entity()->motionMaster();
+    auto forward = motionMaster->forward();
+
+    uint8_t side = packet->read<int8_t>();
+
+    // TODO(gpascualg): Check if it can really fire
+    Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_CANNONS_RESP);
+    *broadcast << client->id() << side;
+    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+
+    // Default to right side
+    glm::vec3 fire_direction = { -forward.y, 0, forward.x };
+    if (side == 0) 
+    {
+        fire_direction *= -1;
+    }
+
+    // TODO(gpascualg): Fetch real number of canons and separation
+    // Assume we have 5 canons, each at 0.1 of the other
+    for (int i = -2; i <= 2; ++i)
+    {
+        glm::vec2 start = fire_direction + 0.1f * forward;
+        float reach = 1.0f;
+
+        // TODO(gpascualg): Throw ray and test collision
+    }
+
+    // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
+    broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
+    *broadcast << client->id() << 1;
+    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+}
+
 void AuraServer::handleAccept(Client* client, const boost::system::error_code& error)
 {
     // Setup entity
@@ -156,7 +192,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // TODO(gpascualg): Move out of here
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
