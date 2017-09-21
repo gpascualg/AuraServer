@@ -186,13 +186,16 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     motionMaster->teleport({ client->id(), 0, 0 });
     //LOG(LOG_DEBUG, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
 
+    // TODO(gpascualg): Use real bounding box sizes
+    client->entity()->setupBoundingBox({ {-0.5, -1.5}, {-0.5, 1.5}, {0.5, 1.5}, {0.5, -1.5} });
+
     map()->addTo(client->entity(), nullptr);
 
     // TODO(gpascualg): Fetch from DB
     // TODO(gpascualg): Move out of here
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 30; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
