@@ -202,6 +202,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
             static std::uniform_real_distribution<> forwardDist(-1, 1); // rage 0 - 1
 
             MapAwareEntity* entity = server->newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
+            entity->setupBoundingBox({ { -0.5, -1.5 },{ -0.5, 1.5 },{ 0.5, 1.5 },{ 0.5, -1.5 } });
             entity->motionMaster()->teleport({ 0,0,0 });
             entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
             entity->motionMaster()->generator(new RandomMovement());
