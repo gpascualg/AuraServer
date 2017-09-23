@@ -77,13 +77,15 @@ void AuraServer::mainloop()
         );
 
         map()->update(diff.count());
-        runScheduledOperations();
 
         _nextTick.consume_all([this](auto func) 
             {
                 func(this);
             }
         );
+
+        // Last, server wide operations (ie. close clients)
+        runScheduledOperations();
 
         // Wait for a constant update time
         if (diff <= WORLD_HEART_BEAT + prevSleepTime)
@@ -178,6 +180,8 @@ void AuraServer::handleFire(Client* client, Packet* packet)
 
 void AuraServer::handleAccept(Client* client, const boost::system::error_code& error)
 {
+    LOG(LOG_CLIENT_LIFECYCLE, "Client setup");
+
     // Setup entity
     _clients.emplace(client->id(), client);
 
@@ -193,9 +197,10 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
 
     // TODO(gpascualg): Fetch from DB
     // TODO(gpascualg): Move out of here
+    /*
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 30; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
@@ -209,6 +214,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
             server->map()->addTo(entity, nullptr);
         }
     });
+    */
 
     // Send ID
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::SET_ID);
@@ -216,8 +222,8 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     client->send(packet);
 
     // Start receiving!
-    Server::handleAccept(client, error);
     client->scheduleRead(2);
+    Server::handleAccept(client, error);
 }
 
 void AuraServer::handleRead(Client* client, const boost::system::error_code& error, size_t size)
