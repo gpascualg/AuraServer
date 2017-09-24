@@ -1,4 +1,5 @@
 #include "server/aura_server.hpp"
+#include "entity/aura_entity.hpp"
 #include "debug/debug.hpp"
 #include "io/packet.hpp"
 #include "map/cell.hpp"
@@ -39,9 +40,9 @@ void AuraServer::mainloop()
 
     while (1)
     {
-        auto now = std::chrono::high_resolution_clock::now();
-        diff = std::chrono::duration_cast<TimeBase>(now - lastUpdate);
-        lastUpdate = now;
+        update();
+        diff = std::chrono::duration_cast<TimeBase>(now() - lastUpdate);
+        lastUpdate = now();
 
         // First update map
         map()->update(diff.count());
@@ -225,6 +226,10 @@ void AuraServer::handleFire(Client* client, Packet* packet)
             broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
             *broadcast << minEnt->id() << 1;
             Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+
+            // TODO(gpascualg): Dynamic damage based on dist/weapon/etc
+            // Apply damage
+            static_cast<Entity*>(minEnt)->damage(50);
         }
     }
 }

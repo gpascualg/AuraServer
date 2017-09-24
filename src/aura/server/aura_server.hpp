@@ -1,8 +1,10 @@
 #pragma once
 
+#include "defs/common.hpp"
 #include "server/server.hpp"
 #include "defs/atomic_autoincrement.hpp"
 #include "client/aura_client.hpp"
+#include "entity/aura_entity.hpp"
 #include "opcodes.hpp"
 
 #include <boost/lockfree/queue.hpp>

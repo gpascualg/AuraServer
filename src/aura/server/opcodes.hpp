@@ -15,6 +15,7 @@ enum class PacketOpcodes
 
     FIRE_CANNONS_RESP =             0x0B01,
     FIRE_HIT =                      0x0B02,
+    ENTITY_DIED =                   0x0B03,
 
     PING =                          0x0001,
     DISCONNECTION =                 0x0002,

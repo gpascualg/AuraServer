@@ -5,6 +5,7 @@ set(SOURCE_FOLDERS
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/server
     ${CMAKE_CURRENT_SOURCE_DIR}/client
+    ${CMAKE_CURRENT_SOURCE_DIR}/entity
 )
 
 foreach(folder ${SOURCE_FOLDERS})
