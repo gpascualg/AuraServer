@@ -6,6 +6,7 @@
 #include "map/map.hpp"
 #include "map/map-cluster/cluster.hpp"
 #include "map/map_aware_entity.hpp"
+#include "map/quadtree.hpp"
 #include "movement/motion_master.hpp"
 #include "movement/movement_generator.hpp"
 
@@ -42,42 +43,45 @@ void AuraServer::mainloop()
         diff = std::chrono::duration_cast<TimeBase>(now - lastUpdate);
         lastUpdate = now;
 
+        // First update map
+        map()->update(diff.count());
+
+        // Read packets
         _packets.consume_all([this](auto recv)
+        {
+            if (recv.client->inMap())
             {
-                if (recv.client->inMap())
+                // Read packet
+                Packet* packet = recv.packet;
+                uint16_t opcode = packet->read<uint16_t>();
+                uint16_t len = packet->read<uint16_t>();
+
+                auto handler = _handlers.find((PacketOpcodes)opcode);
+                if (handler == _handlers.end())
                 {
-                    // Read packet
-                    Packet* packet = recv.packet;
-                    uint16_t opcode = packet->read<uint16_t>();
-                    uint16_t len = packet->read<uint16_t>();
-
-                    auto handler = _handlers.find((PacketOpcodes)opcode);
-                    if (handler == _handlers.end())
-                    {
-                        recv.client->close();
-                    }
-                    else
-                    {
-                        auto& opcodeHandler = handler->second;
-                        if (opcodeHandler.type != HandlerType::NO_CALLBACK)
-                        {
-                            (this->*opcodeHandler.callback)(recv.client, recv.packet);
-                        }
-                    }
-
-
-                    // Back to the pool
-                    recv.packet->destroy();
+                    recv.client->close();
                 }
                 else
                 {
-                    LOG(LOG_FATAL, "Should not happen to have a broadcast while not in map");
+                    auto& opcodeHandler = handler->second;
+                    if (opcodeHandler.type != HandlerType::NO_CALLBACK)
+                    {
+                        (this->*opcodeHandler.callback)(recv.client, recv.packet);
+                    }
                 }
+
+
+                // Back to the pool
+                recv.packet->destroy();
             }
+            else
+            {
+                LOG(LOG_FATAL, "Should not happen to have a broadcast while not in map");
+            }
+        }
         );
 
-        map()->update(diff.count());
-
+        // Consume scheduled tasks
         _nextTick.consume_all([this](auto func) 
             {
                 func(this);
@@ -86,6 +90,9 @@ void AuraServer::mainloop()
 
         // Last, server wide operations (ie. close clients)
         runScheduledOperations();
+
+        // Now cleanup map
+        map()->cleanup(diff.count());
 
         // Wait for a constant update time
         if (diff <= WORLD_HEART_BEAT + prevSleepTime)
@@ -145,37 +152,81 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
 
 void AuraServer::handleFire(Client* client, Packet* packet)
 {
-    auto motionMaster = client->entity()->motionMaster();
+    auto entity = client->entity();
+    auto motionMaster = entity->motionMaster();
     auto forward = motionMaster->forward();
 
+    // Log something
+    LOG(LOG_FIRE_LOGIC, "Entity %" PRId64 " fired", entity->id());
+
+    // Read which side shoots to
     uint8_t side = packet->read<int8_t>();
 
     // TODO(gpascualg): Check if it can really fire
+    // Broadcast fire packet
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_CANNONS_RESP);
     *broadcast << client->id() << side;
-    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+    Server::map()->broadcastToSiblings(entity->cell(), broadcast);
 
-    // Default to right side
-    glm::vec3 fire_direction = { -forward.y, 0, forward.x };
-    if (side == 0) 
+    // Default to left side
+    const auto& position2D = entity->motionMaster()->position2D();
+    glm::vec2 fire_direction = { -forward.z, forward.x };
+    glm::vec2 forward2D = { forward.x, forward.z };
+    if (side == 1) 
     {
         fire_direction *= -1;
     }
+
+    LOG(LOG_FIRE_LOGIC, " + Placed at (%f , %f)", position2D.x, position2D.y);
 
     // TODO(gpascualg): Fetch real number of canons and separation
     // Assume we have 5 canons, each at 0.1 of the other
     for (int i = -2; i <= 2; ++i)
     {
-        glm::vec2 start = fire_direction + 0.1f * forward;
-        float reach = 1.0f;
+        glm::vec2 start = position2D + i * 1.0f * forward2D;
+        glm::vec2 end = position2D + i * 1.0f * forward2D + 50.0f * fire_direction;
 
-        // TODO(gpascualg): Throw ray and test collision
+        LOG(LOG_FIRE_LOGIC, "    + Firing from (%f , %f) to (%f , %f)", start.x, start.y, end.x, end.y);
+
+        // TODO(gpascualg): This might not be the best place?
+        auto qt = entity->cell()->quadtree();
+        std::list<MapAwareEntity*> entities;
+        qt->trace(entities, start, end);
+
+        // TODO(gpascualg): Calculate hits, if any
+        float minDist = 0;
+        MapAwareEntity* minEnt = nullptr;
+
+        //LOG(LOG_FIRE_LOGIC, "      + Number of candidates %d", entities.size());
+
+        for (auto*& candidate : entities)
+        {
+            if (candidate == entity)
+            {
+                continue;
+            }
+
+            float tmp;
+            if (candidate->boundingBox()->intersects(start, end, &tmp))
+            {
+                if (!minEnt || tmp < minDist)
+                {
+                    minDist = tmp;
+                    minEnt = candidate;
+                }
+            }
+        }
+
+        if (minEnt)
+        {
+            LOG(LOG_FIRE_LOGIC, "    > Hit %" PRId64 " at (%f, %f)", minEnt->id(), minEnt->motionMaster()->position().x, minEnt->motionMaster()->position().z);
+
+            // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
+            broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
+            *broadcast << minEnt->id() << 1;
+            Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+        }
     }
-
-    // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
-    broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
-    *broadcast << client->id() << 1;
-    Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
 
 void AuraServer::handleAccept(Client* client, const boost::system::error_code& error)
@@ -191,30 +242,28 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     //LOG(LOG_DEBUG, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
 
     // TODO(gpascualg): Use real bounding box sizes
-    client->entity()->setupBoundingBox({ {-0.5, -1.5}, {-0.5, 1.5}, {0.5, 1.5}, {0.5, -1.5} });
+    client->entity()->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
 
     map()->addTo(client->entity(), nullptr);
 
     // TODO(gpascualg): Fetch from DB
     // TODO(gpascualg): Move out of here
-    /*
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 30; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
             static std::uniform_real_distribution<> forwardDist(-1, 1); // rage 0 - 1
 
             MapAwareEntity* entity = server->newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
-            entity->setupBoundingBox({ { -0.5, -1.5 },{ -0.5, 1.5 },{ 0.5, 1.5 },{ 0.5, -1.5 } });
+            entity->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
             entity->motionMaster()->teleport({ 0,0,0 });
             entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
             entity->motionMaster()->generator(new RandomMovement());
             server->map()->addTo(entity, nullptr);
         }
     });
-    */
 
     // Send ID
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::SET_ID);
