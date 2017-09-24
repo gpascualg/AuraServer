@@ -177,7 +177,7 @@ void AuraServer::handleFire(Client* client, Packet* packet)
         fire_direction *= -1;
     }
 
-    LOG(LOG_FIRE_LOGIC, " + Placed at (%f , %f)", position2D.x, position2D.y);
+    LOG(LOG_FIRE_LOGIC_EXT, " + Placed at (%f , %f)", position2D.x, position2D.y);
 
     // TODO(gpascualg): Fetch real number of canons and separation
     // Assume we have 5 canons, each at 0.1 of the other
@@ -186,7 +186,7 @@ void AuraServer::handleFire(Client* client, Packet* packet)
         glm::vec2 start = position2D + i * 1.0f * forward2D;
         glm::vec2 end = position2D + i * 1.0f * forward2D + 50.0f * fire_direction;
 
-        LOG(LOG_FIRE_LOGIC, "    + Firing from (%f , %f) to (%f , %f)", start.x, start.y, end.x, end.y);
+        LOG(LOG_FIRE_LOGIC_EXT, "    + Firing from (%f , %f) to (%f , %f)", start.x, start.y, end.x, end.y);
 
         // TODO(gpascualg): This might not be the best place?
         auto qt = entity->cell()->quadtree();
@@ -197,7 +197,7 @@ void AuraServer::handleFire(Client* client, Packet* packet)
         float minDist = 0;
         MapAwareEntity* minEnt = nullptr;
 
-        //LOG(LOG_FIRE_LOGIC, "      + Number of candidates %d", entities.size());
+        LOG(LOG_FIRE_LOGIC_EXT, "      + Number of candidates %d", entities.size());
 
         for (auto*& candidate : entities)
         {
@@ -219,7 +219,7 @@ void AuraServer::handleFire(Client* client, Packet* packet)
 
         if (minEnt)
         {
-            LOG(LOG_FIRE_LOGIC, "    > Hit %" PRId64 " at (%f, %f)", minEnt->id(), minEnt->motionMaster()->position().x, minEnt->motionMaster()->position().z);
+            LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", minEnt->id(), minEnt->motionMaster()->position().x, minEnt->motionMaster()->position().z);
 
             // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
             broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
@@ -250,7 +250,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // TODO(gpascualg): Move out of here
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 30; ++i)
+        for (int i = 0; i < 10; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
