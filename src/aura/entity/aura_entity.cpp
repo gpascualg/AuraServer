@@ -51,7 +51,7 @@ void Entity::damage(int amount)
 
 void Entity::die()
 {
-    // Stop any momvement
+    // Stop any movement
     motionMaster()->stop(true);
 
     // TODO(gpascualg): Sent packet with stop instructions (not only speed)
@@ -63,5 +63,6 @@ void Entity::die()
         cell->map()->removeFrom(cell, entity, nullptr);
         
         // TODO(gpascualg): What happens with the entity? It should be cleaned
+        // HACK(gpascualg): CLEAN MEMORY!
     }, Server::get()->now() + std::chrono::seconds(5));
 }
