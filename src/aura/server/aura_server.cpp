@@ -106,7 +106,7 @@ void AuraServer::mainloop()
             prevSleepTime = prevSleepTime.zero();
         }
 
-        LOG(LOG_SERVER_LOOP, "DIFF: %" PRId64 " - SLEEP: %" PRId64, diff, prevSleepTime);
+        LOG(LOG_SERVER_LOOP, "DIFF: %" PRId64 " - SLEEP: %" PRId64, diff.count(), prevSleepTime.count());
     }
 }
 
@@ -198,7 +198,7 @@ void AuraServer::handleFire(Client* client, Packet* packet)
         float minDist = 0;
         MapAwareEntity* minEnt = nullptr;
 
-        LOG(LOG_FIRE_LOGIC_EXT, "      + Number of candidates %d", entities.size());
+        LOG(LOG_FIRE_LOGIC_EXT, "      + Number of candidates %" PRIuPTR, entities.size());
 
         for (auto*& candidate : entities)
         {
