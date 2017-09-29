@@ -255,7 +255,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // TODO(gpascualg): Move out of here
     _nextTick.push([](AuraServer* server)
     {
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             // TODO(gpascualg): Move this out to somewhere else
             static std::default_random_engine randomEngine;
