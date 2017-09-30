@@ -99,7 +99,7 @@ void AuraServer::mainloop()
         );
 
         // Consume scheduled tasks
-        _syncQueue.consume_all([this](auto func) 
+        _syncQueue.consume_all([this](auto func)
             {
                 func(this);
             }
@@ -148,7 +148,7 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
 {
     auto motionMaster = client->entity()->motionMaster();
     int8_t speed = packet->read<int8_t>();
-    
+
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::SPEED_CHANGE_RESP);
     *broadcast << client->id() << speed;
     *broadcast << motionMaster->position();
@@ -210,7 +210,7 @@ void AuraServer::handleCanonFire(Client* client, Packet* packet)
     const auto& position2D = entity->motionMaster()->position2D();
     glm::vec2 fire_direction = { -forward.z, forward.x };
     glm::vec2 forward2D = { forward.x, forward.z };
-    if (side == 1) 
+    if (side == 1)
     {
         fire_direction *= -1;
     }
@@ -260,12 +260,12 @@ void AuraServer::handleCanonFire(Client* client, Packet* packet)
 
             // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
             Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
-            *broadcast << minEnt->id() << 1;
+            *broadcast << minEnt->id() << static_cast<uint8_t>(WeaponType::CANNON) << 50.0f;
             Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 
             // TODO(gpascualg): Dynamic damage based on dist/weapon/etc
             // Apply damage
-            static_cast<Entity*>(minEnt)->damage(50);
+            static_cast<Entity*>(minEnt)->damage(50.0f);
         }
     }
 }
@@ -312,12 +312,12 @@ void AuraServer::handleMortarFire(Client* client, Packet* packet)
 
             // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
             Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
-            *broadcast << candidate->id() << 1;
+            *broadcast << candidate->id() << static_cast<uint8_t>(WeaponType::MORTAR) << 50.0f;
             Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 
             // TODO(gpascualg): Dynamic damage based on dist/weapon/etc
             // Apply damage
-            static_cast<Entity*>(candidate)->damage(50);
+            static_cast<Entity*>(candidate)->damage(50.0f);
         }
     }
 }
@@ -334,7 +334,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     motionMaster->teleport({ client->id(), 0, 0 });
     //LOG(LOG_DEBUG, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
 
-    // TODO(gpascualg): Use real bounding box sizes
+    // Real bounding box sizes
     client->entity()->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
 
     map()->addTo(client->entity(), nullptr);

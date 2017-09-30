@@ -17,7 +17,7 @@ Packet* Entity::spawnPacket()
     *packet << motionMaster()->position();
     *packet << motionMaster()->forward();
     *packet << (uint8_t)(motionMaster()->speed() * 1000.0f);
-    
+
     // Movement generator
     if (motionMaster()->generator() && motionMaster()->generator()->hasNext())
     {
@@ -54,14 +54,13 @@ void Entity::die()
     // Stop any movement
     motionMaster()->stop(true);
 
-    // TODO(gpascualg): Sent packet with stop instructions (not only speed)
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::ENTITY_DIED);
     *broadcast << id();
 
     schedule([](MapAwareEntity* entity) {
         auto cell = entity->cell();
         cell->map()->removeFrom(cell, entity, nullptr);
-        
+
         // TODO(gpascualg): What happens with the entity? It should be cleaned
         // HACK(gpascualg): CLEAN MEMORY!
     }, Server::get()->now() + std::chrono::seconds(5));
