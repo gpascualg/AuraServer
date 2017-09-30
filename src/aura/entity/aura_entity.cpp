@@ -39,12 +39,12 @@ Packet* Entity::despawnPacket()
     return packet;
 }
 
-void Entity::damage(int amount)
+void Entity::damage(float amount)
 {
     _health -= amount;
-    if (_health <= 0 && alive)
+    if (_health <= 0 && _alive)
     {
-        alive = false;
+        _alive = false;
         die();
     }
 }

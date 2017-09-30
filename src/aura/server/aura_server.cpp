@@ -31,11 +31,11 @@ void AuraServer::mainloop()
     auto prevSleepTime = std::chrono::duration_cast<TimeBase>(diff);
 
 
-    _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { &AuraServer::handleSpeedChange,     HandlerType::NORMAL });
-    _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { &AuraServer::handleForwardChange,   HandlerType::NORMAL });
-    _handlers.emplace(PacketOpcodes::FIRE_PACKET,       OpcodeHandler { &AuraServer::handleFire,            HandlerType::NORMAL });
-    _handlers.emplace(PacketOpcodes::PING,              OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
-    _handlers.emplace(PacketOpcodes::DISCONNECTION,     OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
+    _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { &AuraServer::handleSpeedChange,     HandlerType::NORMAL,        Condition::ALIVE });
+    _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { &AuraServer::handleForwardChange,   HandlerType::NORMAL,        Condition::ALIVE });
+    _handlers.emplace(PacketOpcodes::FIRE_PACKET,       OpcodeHandler { &AuraServer::handleFire,            HandlerType::NORMAL,        Condition::ALIVE });
+    _handlers.emplace(PacketOpcodes::PING,              OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK,   Condition::NONE });
+    _handlers.emplace(PacketOpcodes::DISCONNECTION,     OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK,   Condition::NONE });
 
 
     while (1)
@@ -64,8 +64,24 @@ void AuraServer::mainloop()
                 }
                 else
                 {
+                    bool stopHandling = false;
                     auto& opcodeHandler = handler->second;
-                    if (opcodeHandler.type != HandlerType::NO_CALLBACK)
+
+                    switch (opcodeHandler.cond)
+                    {
+                        case Condition::NONE:
+                            break;
+
+                        case Condition::ALIVE:
+                            if (!recv.client->entity() || !static_cast<Entity*>(recv.client->entity())->isAlive())
+                            {
+                                stopHandling = true;
+                                recv.client->close();
+                            }
+                            break;
+                    }
+
+                    if (!stopHandling && opcodeHandler.type != HandlerType::NO_CALLBACK)
                     {
                         (this->*opcodeHandler.callback)(recv.client, recv.packet);
                     }
@@ -83,7 +99,7 @@ void AuraServer::mainloop()
         );
 
         // Consume scheduled tasks
-        _nextTick.consume_all([this](auto func) 
+        _syncQueue.consume_all([this](auto func) 
             {
                 func(this);
             }
@@ -325,22 +341,19 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
 
     // TODO(gpascualg): Fetch from DB
     // TODO(gpascualg): Move out of here
-    _nextTick.push([](AuraServer* server)
+    for (int i = 0; i < 1; ++i)
     {
-        for (int i = 0; i < 1; ++i)
-        {
-            // TODO(gpascualg): Move this out to somewhere else
-            static std::default_random_engine randomEngine;
-            static std::uniform_real_distribution<> forwardDist(-1, 1); // rage 0 - 1
+        // TODO(gpascualg): Move this out to somewhere else
+        static std::default_random_engine randomEngine;
+        static std::uniform_real_distribution<> forwardDist(-1, 1); // rage 0 - 1
 
-            MapAwareEntity* entity = server->newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
-            entity->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
-            entity->motionMaster()->teleport({ 0,0,0 });
-            entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
-            entity->motionMaster()->generator(new RandomMovement());
-            server->map()->addTo(entity, nullptr);
-        }
-    });
+        MapAwareEntity* entity = newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
+        entity->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
+        entity->motionMaster()->teleport({ 0,0,0 });
+        entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
+        entity->motionMaster()->generator(new RandomMovement());
+        map()->addTo(entity, nullptr);
+    }
 
     // Send ID
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::SET_ID);

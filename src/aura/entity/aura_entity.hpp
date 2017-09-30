@@ -22,10 +22,12 @@ public:
     Packet* spawnPacket() override;
     Packet* despawnPacket() override;
 
-    void damage(int amount);
+    void damage(float amount);
     void die();
 
+    inline bool isAlive() { return _alive; };
+
 private:
-    int _health = 100.0f;
-    bool alive = true;
+    float _health = 100.0f;
+    bool _alive = true;
 };

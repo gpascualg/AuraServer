@@ -56,7 +56,7 @@ protected:
     };
 
     boost::lockfree::queue<Recv, boost::lockfree::capacity<4096>> _packets;
-    boost::lockfree::queue<void(*)(AuraServer*), boost::lockfree::capacity<4096>> _nextTick;
+    boost::lockfree::queue<void(*)(AuraServer*), boost::lockfree::capacity<4096>> _syncQueue;
 
     enum class HandlerType
     {
@@ -64,10 +64,17 @@ protected:
         NORMAL
     };
 
+    enum class Condition
+    {
+        NONE,
+        ALIVE
+    };
+
     struct OpcodeHandler
     {
         void (AuraServer::*callback)(Client*, Packet*);
         HandlerType type;
+        Condition cond;
     };
 
 #if defined(_WIN32) || defined(__clang__)
