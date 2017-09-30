@@ -8,6 +8,12 @@
 
 class Packet;
 
+enum class WeaponType
+{
+    CANNON = 0,
+    MORTAR = 1
+};
+
 class Entity : public MapAwareEntity
 {
 public:

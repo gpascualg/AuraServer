@@ -41,6 +41,10 @@ public:
     void destroyMapAwareEntity(MapAwareEntity* entity) override;
 
 protected:
+    void handleCanonFire(Client* client, Packet* packet);
+    void handleMortarFire(Client* client, Packet* packet);
+
+protected:
     std::unordered_map<uint64_t, Client*> _clients;
     boost::object_pool<AuraClient> _clientPool;
     boost::object_pool<Entity> _entityPool;

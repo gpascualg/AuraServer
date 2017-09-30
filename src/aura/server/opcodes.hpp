@@ -11,7 +11,7 @@ enum class PacketOpcodes
     SPEED_CHANGE_RESP =             0x0A04,
     FORWARD_FORCE =                 0x0A05,
 
-    FIRE_CANNONS =                  0x0201,
+    FIRE_PACKET =                   0x0201,
 
     FIRE_CANNONS_RESP =             0x0B01,
     FIRE_HIT =                      0x0B02,

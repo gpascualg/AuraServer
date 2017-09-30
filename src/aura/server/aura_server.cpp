@@ -33,7 +33,7 @@ void AuraServer::mainloop()
 
     _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { &AuraServer::handleSpeedChange,     HandlerType::NORMAL });
     _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { &AuraServer::handleForwardChange,   HandlerType::NORMAL });
-    _handlers.emplace(PacketOpcodes::FIRE_CANNONS,      OpcodeHandler { &AuraServer::handleFire,            HandlerType::NORMAL });
+    _handlers.emplace(PacketOpcodes::FIRE_PACKET,       OpcodeHandler { &AuraServer::handleFire,            HandlerType::NORMAL });
     _handlers.emplace(PacketOpcodes::PING,              OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
     _handlers.emplace(PacketOpcodes::DISCONNECTION,     OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK });
 
@@ -89,7 +89,7 @@ void AuraServer::mainloop()
             }
         );
 
-        // Last, server wide operations (ie. close clients)
+        // Last, server wide operations (ie. accept/close clients)
         runScheduledOperations();
 
         // Now cleanup map
@@ -154,20 +154,41 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
 void AuraServer::handleFire(Client* client, Packet* packet)
 {
     auto entity = client->entity();
-    auto motionMaster = entity->motionMaster();
-    auto forward = motionMaster->forward();
 
     // Log something
     LOG(LOG_FIRE_LOGIC, "Entity %" PRId64 " fired", entity->id());
 
-    // Read which side shoots to
-    uint8_t side = packet->read<int8_t>();
-
     // TODO(gpascualg): Check if it can really fire
     // Broadcast fire packet
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_CANNONS_RESP);
-    *broadcast << client->id() << side;
+    *broadcast << client->id() << packet;
     Server::map()->broadcastToSiblings(entity->cell(), broadcast);
+
+    WeaponType type = (WeaponType)packet->read<uint8_t>();
+    switch (type)
+    {
+        case WeaponType::CANNON:
+            handleCanonFire(client, packet);
+            break;
+
+        case WeaponType::MORTAR:
+            handleMortarFire(client, packet);
+            break;
+
+        default:
+            // TODO(gpascualg): Disconnect client :D
+            break;
+    }
+}
+
+void AuraServer::handleCanonFire(Client* client, Packet* packet)
+{
+    auto entity = client->entity();
+    auto motionMaster = entity->motionMaster();
+    auto forward = motionMaster->forward();
+
+    // Read which side shoots to
+    uint8_t side = packet->read<uint8_t>();
 
     // Default to left side
     const auto& position2D = entity->motionMaster()->position2D();
@@ -189,12 +210,11 @@ void AuraServer::handleFire(Client* client, Packet* packet)
 
         LOG(LOG_FIRE_LOGIC_EXT, "    + Firing from (%f , %f) to (%f , %f)", start.x, start.y, end.x, end.y);
 
-        // TODO(gpascualg): This might not be the best place?
+        // Check all candidates
         auto qt = entity->cell()->quadtree();
         std::list<MapAwareEntity*> entities;
         qt->trace(entities, start, end);
 
-        // TODO(gpascualg): Calculate hits, if any
         float minDist = 0;
         MapAwareEntity* minEnt = nullptr;
 
@@ -223,13 +243,65 @@ void AuraServer::handleFire(Client* client, Packet* packet)
             LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", minEnt->id(), minEnt->motionMaster()->position().x, minEnt->motionMaster()->position().z);
 
             // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
-            broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
+            Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
             *broadcast << minEnt->id() << 1;
             Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 
             // TODO(gpascualg): Dynamic damage based on dist/weapon/etc
             // Apply damage
             static_cast<Entity*>(minEnt)->damage(50);
+        }
+    }
+}
+
+void AuraServer::handleMortarFire(Client* client, Packet* packet)
+{
+    auto entity = client->entity();
+    auto motionMaster = entity->motionMaster();
+    auto forward = motionMaster->forward();
+
+    // Read direction & radius
+    glm::vec2 direction = packet->read<glm::vec2>();
+    float radius = packet->read<float>();
+
+    // TODO(gpascualg): Check maximum radius
+
+    // Default to left side
+    const auto& position2D = entity->motionMaster()->position2D();
+    LOG(LOG_FIRE_LOGIC_EXT, " + Placed at (%f , %f)", position2D.x, position2D.y);
+
+    // Calculate hit point and create a bounding box there
+    glm::vec2 hitPoint = position2D + direction * radius;
+    BoundingBox* box = new CircularBoundingBox(hitPoint, { 0, 0, 0 }, radius);
+
+    LOG(LOG_FIRE_LOGIC_EXT, "    + Firing to (%f , %f)", hitPoint.x, hitPoint.y);
+
+    // TODO(gpascualg): This might not be the best place?
+    auto qt = entity->cell()->quadtree();
+    std::list<MapAwareEntity*> entities;
+    qt->retrieve(entities, box->asRect());
+
+    LOG(LOG_FIRE_LOGIC_EXT, "      + Number of candidates %" PRIuPTR, entities.size());
+
+    for (auto*& candidate : entities)
+    {
+        if (candidate == entity)
+        {
+            continue;
+        }
+
+        if (SAT::get()->collides(candidate->boundingBox(), box))
+        {
+            LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", candidate->id(), candidate->motionMaster()->position().x, candidate->motionMaster()->position().z);
+
+            // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
+            Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
+            *broadcast << candidate->id() << 1;
+            Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+
+            // TODO(gpascualg): Dynamic damage based on dist/weapon/etc
+            // Apply damage
+            static_cast<Entity*>(candidate)->damage(50);
         }
     }
 }
