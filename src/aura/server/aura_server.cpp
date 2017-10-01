@@ -171,9 +171,6 @@ void AuraServer::handleFire(Client* client, Packet* packet)
 {
     auto entity = client->entity();
 
-    // Log something
-    LOG(LOG_FIRE_LOGIC, "Entity %" PRId64 " fired", entity->id());
-
     // TODO(gpascualg): Check if it can really fire
     // Broadcast fire packet
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_CANNONS_RESP);
@@ -181,6 +178,10 @@ void AuraServer::handleFire(Client* client, Packet* packet)
     Server::map()->broadcastToSiblings(entity->cell(), broadcast);
 
     WeaponType type = (WeaponType)packet->read<uint8_t>();
+
+    // Log something
+    LOG(LOG_FIRE_LOGIC, "Entity %" PRId64 " fired [Type: %d]", entity->id(), static_cast<uint8_t>(type));
+
     switch (type)
     {
         case WeaponType::CANNON:
@@ -215,7 +216,7 @@ void AuraServer::handleCanonFire(Client* client, Packet* packet)
         fire_direction *= -1;
     }
 
-    LOG(LOG_FIRE_LOGIC_EXT, " + Placed at (%f , %f)", position2D.x, position2D.y);
+    LOG(LOG_FIRE_LOGIC, " + Placed at (%f , %f) with direction %d", position2D.x, position2D.y, side);
 
     // TODO(gpascualg): Fetch real number of canons and separation
     // Assume we have 5 canons, each at 0.1 of the other
@@ -287,7 +288,8 @@ void AuraServer::handleMortarFire(Client* client, Packet* packet)
     LOG(LOG_FIRE_LOGIC_EXT, " + Placed at (%f , %f)", position2D.x, position2D.y);
 
     // Calculate hit point and create a bounding box there
-    glm::vec2 hitPoint = position2D + direction * radius;
+    glm::vec2 hitPoint2D = position2D + direction * radius;
+    glm::vec3 hitPoint { hitPoint2D.x, 0, hitPoint2D.y };
     BoundingBox* box = new CircularBoundingBox(hitPoint, { 0, 0, 0 }, radius);
 
     LOG(LOG_FIRE_LOGIC_EXT, "    + Firing to (%f , %f)", hitPoint.x, hitPoint.y);
