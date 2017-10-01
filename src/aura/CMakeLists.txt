@@ -48,13 +48,6 @@ AddDependency(
     DEPENDENCY Shinzui
 )
 
-if (UNIX)
-    AddDependency(
-        TARGET AuraServer
-        DEPENDENCY pthread
-    )
-endif()
-
 BuildNow(
     TARGET AuraServer
     EXECUTABLE ON
