@@ -3,3 +3,4 @@
 compile_commands.json
 Win32/
 .vs/
+.vscode/
