@@ -1,4 +1,4 @@
 
 # -[ Shinzui
-set(SHINZUI_DEBUG ${DBOS_DEBUG})
+set(SHINZUI_DEBUG ${AuraServer_DEBUG})
 add_subdirectory(Shinzui)

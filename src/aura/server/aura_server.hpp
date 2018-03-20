@@ -77,7 +77,7 @@ protected:
         Condition cond;
     };
 
-#if defined(_WIN32) || defined(__clang__)
+#if defined(_WIN32)
     std::unordered_map<PacketOpcodes, OpcodeHandler> _handlers;
 #else
     struct EnumClassHash
