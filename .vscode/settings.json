@@ -5,6 +5,7 @@
         "array": "cpp",
         "slist": "cpp",
         "initializer_list": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "*.ipp": "cpp"
     }
 }

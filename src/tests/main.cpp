@@ -31,7 +31,7 @@ int main()
     map.addTo2D(40, 40, new Entity());
 */
 
-    map.addTo2D({ 0, 0 }, new Entity(0), nullptr);
+    map.addTo3D({ 0, 0, 0 }, new Entity(0), nullptr);
     for (int k = 1; k <= 1000; k *= 2)
     {
         LOG_ALWAYS("CREATING");
@@ -39,7 +39,7 @@ int main()
         {
             for (float y = (float)(-5 * k); y < (float)(5 * k); y += rand() / (float)RAND_MAX * 10)
             {
-                map.addTo2D({ x, y }, new Entity(k), nullptr);
+                map.addTo3D({ x, 0, y }, new Entity(k), nullptr);
             }
         }
 
