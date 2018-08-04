@@ -7,5 +7,6 @@
         "initializer_list": "cpp",
         "utility": "cpp",
         "*.ipp": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false
 }

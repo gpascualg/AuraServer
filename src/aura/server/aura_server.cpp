@@ -290,14 +290,14 @@ void AuraServer::handleMortarFire(Client* client, Packet* packet)
     // Calculate hit point and create a bounding box there
     glm::vec2 hitPoint2D = position2D + direction * radius;
     glm::vec3 hitPoint { hitPoint2D.x, 0, hitPoint2D.y };
-    BoundingBox* box = new CircularBoundingBox(hitPoint, { 0, 0, 0 }, radius);
+    CircularBoundingBox box(hitPoint, { 0, 0, 0 }, radius);
 
     LOG(LOG_FIRE_LOGIC_EXT, "    + Firing to (%f , %f)", hitPoint.x, hitPoint.y);
 
     // TODO(gpascualg): This might not be the best place?
     auto qt = entity->cell()->quadtree();
     std::list<MapAwareEntity*> entities;
-    qt->retrieve(entities, box->asRect());
+    qt->retrieve(entities, box.asRect());
 
     LOG(LOG_FIRE_LOGIC_EXT, "      + Number of candidates %" PRIuPTR, entities.size());
 
@@ -308,7 +308,7 @@ void AuraServer::handleMortarFire(Client* client, Packet* packet)
             continue;
         }
 
-        if (SAT::get()->collides(candidate->boundingBox(), box))
+        if (SAT::get()->collides(candidate->boundingBox(), &box))
         {
             LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", candidate->id(), candidate->motionMaster()->position().x, candidate->motionMaster()->position().z);
 
