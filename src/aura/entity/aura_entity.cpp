@@ -57,7 +57,9 @@ void Entity::die()
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::ENTITY_DIED);
     *broadcast << id();
 
-    schedule([](MapAwareEntity* entity) {
+    schedule([](Executor<ExecutorQueueMax>* executor) {
+        auto entity = static_cast<MapAwareEntity*>(executor);
+        
         auto cell = entity->cell();
         cell->map()->removeFrom(cell, entity, nullptr);
 
