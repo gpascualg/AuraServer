@@ -29,9 +29,12 @@ public:
 
     void mainloop();
 
-    bool handleForwardChange(ClientWork* work);
-    bool handleSpeedChange(ClientWork* work);
-    bool handleFire(ClientWork* work);
+    AbstractWork* handleLogin(ClientWork* work);
+    AbstractWork* loginResult(FutureWork<bool>* work);
+
+    AbstractWork* handleForwardChange(ClientWork* work);
+    AbstractWork* handleSpeedChange(ClientWork* work);
+    AbstractWork* handleFire(ClientWork* work);
 
     Client* newClient(boost::asio::io_service* service, uint64_t id) override;
     void destroyClient(Client* client) override;

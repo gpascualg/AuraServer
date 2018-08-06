@@ -1,6 +1,8 @@
 #include "server/aura_server.hpp"
 #include "entity/aura_entity.hpp"
+#include "database/database.hpp"
 #include "debug/debug.hpp"
+#include "framework/framework.hpp"
 #include "io/packet.hpp"
 #include "map/cell.hpp"
 #include "server/client.hpp"
@@ -24,19 +26,20 @@ using TimeBase = std::chrono::milliseconds;
 const uint16_t MAX_PACKET_LEN = 1000;
 const TimeBase WORLD_HEART_BEAT = TimeBase(50);
 
-template <typename> struct FirstArgument;
+template <typename> struct Types;
 
 template <typename R, typename A, typename... Args>
-struct FirstArgument<R(AuraServer::*)(A, Args...)>
+struct Types<R(AuraServer::*)(A, Args...)>
 {
-   using type = A;
+    using returnType = R;
+    using firstArgType = A;
 };
 
-template <typename T>
-using first_agument_t = typename FirstArgument<T>::type;
+template <typename T> using first_agument_t = typename Types<T>::firstArgType;
+template <typename T> using return_t = typename Types<T>::returnType;
 
 
-#define MAKE_HANDLER(x) [this](AbstractWork* w) -> bool { return this->x(static_cast<first_agument_t<decltype(&AuraServer::x)>>(w)); }
+#define MAKE_HANDLER(x) [this](AbstractWork* w) -> AbstractWork* { return this->x(static_cast<first_agument_t<decltype(&AuraServer::x)>>(w)); }
 // #define MALE_HANDLER(x) std::bind(&AuraServer::x, this, std::placeholders::_1)
 
 void AuraServer::mainloop()
@@ -53,7 +56,27 @@ void AuraServer::mainloop()
     }
 }
 
-bool AuraServer::handleForwardChange(ClientWork* work)
+AbstractWork* AuraServer::handleLogin(ClientWork* work)
+{
+    std::string username = work->packet()->read<std::string>();
+    std::string password = work->packet()->read<std::string>();
+
+    auto future = Framework::get()->database()->query<bool>("aura", [username, password](const mongocxx::database& db) {
+        bsoncxx::builder::stream::document filter_builder;
+        filter_builder << "_id" << username << "password" << password;
+
+        return db["users"].count(filter_builder.view()) == 1;
+    });
+
+    return new FutureWork<bool>(MAKE_HANDLER(loginResult), work->executor(), std::move(future));
+}
+
+AbstractWork* AuraServer::loginResult(FutureWork<bool>* work)
+{
+    return nullptr;
+}
+
+AbstractWork* AuraServer::handleForwardChange(ClientWork* work)
 {
     Client* client = work->executor();
     Packet* packet = work->packet();
@@ -72,9 +95,10 @@ bool AuraServer::handleForwardChange(ClientWork* work)
     }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+    return nullptr;
 }
 
-bool AuraServer::handleSpeedChange(ClientWork* work)
+AbstractWork* AuraServer::handleSpeedChange(ClientWork* work)
 {
     Client* client = work->executor();
     Packet* packet = work->packet();
@@ -98,10 +122,10 @@ bool AuraServer::handleSpeedChange(ClientWork* work)
     }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
-    return true;
+    return nullptr;
 }
 
-bool AuraServer::handleFire(ClientWork* work)
+AbstractWork* AuraServer::handleFire(ClientWork* work)
 {
     Client* client = work->executor();
     Packet* packet = work->packet();
@@ -131,11 +155,11 @@ bool AuraServer::handleFire(ClientWork* work)
 
         default:
             // TODO(gpascualg): Disconnect client :D
-            return false;
+            return nullptr;
             break;
     }
 
-    return true;
+    return nullptr;
 }
 
 void AuraServer::handleCanonFire(Client* client, Packet* packet)
