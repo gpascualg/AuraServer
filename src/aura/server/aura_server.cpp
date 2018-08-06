@@ -24,110 +24,40 @@ using TimeBase = std::chrono::milliseconds;
 const uint16_t MAX_PACKET_LEN = 1000;
 const TimeBase WORLD_HEART_BEAT = TimeBase(50);
 
+template <typename> struct FirstArgument;
+
+template <typename R, typename A, typename... Args>
+struct FirstArgument<R(AuraServer::*)(A, Args...)>
+{
+   using type = A;
+};
+
+template <typename T>
+using first_agument_t = typename FirstArgument<T>::type;
+
+
+#define MAKE_HANDLER(x) [this](AbstractWork* w) -> bool { return this->x(static_cast<first_agument_t<decltype(&AuraServer::x)>>(w)); }
+// #define MALE_HANDLER(x) std::bind(&AuraServer::x, this, std::placeholders::_1)
+
 void AuraServer::mainloop()
 {
-    auto lastUpdate = std::chrono::high_resolution_clock::now();
-    auto diff = std::chrono::duration_cast<TimeBase>(lastUpdate - lastUpdate); // HACK(gpascualg): Cheaty way to get duration
-    auto prevSleepTime = std::chrono::duration_cast<TimeBase>(diff);
-
-
-    _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { &AuraServer::handleSpeedChange,     HandlerType::NORMAL,        Condition::ALIVE });
-    _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { &AuraServer::handleForwardChange,   HandlerType::NORMAL,        Condition::ALIVE });
-    _handlers.emplace(PacketOpcodes::FIRE_PACKET,       OpcodeHandler { &AuraServer::handleFire,            HandlerType::NORMAL,        Condition::ALIVE });
+    _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { MAKE_HANDLER(handleSpeedChange),    HandlerType::ASYNC_CLIENT,  Condition::ALIVE });
+    _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { MAKE_HANDLER(handleForwardChange),  HandlerType::ASYNC_CLIENT,  Condition::ALIVE });
+    _handlers.emplace(PacketOpcodes::FIRE_PACKET,       OpcodeHandler { MAKE_HANDLER(handleFire),           HandlerType::ASYNC_CLIENT,  Condition::ALIVE });
     _handlers.emplace(PacketOpcodes::PING,              OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK,   Condition::NONE });
     _handlers.emplace(PacketOpcodes::DISCONNECTION,     OpcodeHandler { nullptr,                            HandlerType::NO_CALLBACK,   Condition::NONE });
-
 
     while (1)
     {
         update();
-        diff = std::chrono::duration_cast<TimeBase>(now() - lastUpdate);
-        lastUpdate = now();
-
-        // First update map
-        map()->update(diff.count());
-
-        // Read packets
-        _packets.consume_all([this](auto recv)
-        {
-            if (recv.client->inMap())
-            {
-                // Read packet
-                Packet* packet = recv.packet;
-                uint16_t opcode = packet->read<uint16_t>();
-                uint16_t len = packet->read<uint16_t>();
-
-                auto handler = _handlers.find((PacketOpcodes)opcode);
-                if (handler == _handlers.end())
-                {
-                    recv.client->close();
-                }
-                else
-                {
-                    bool stopHandling = false;
-                    auto& opcodeHandler = handler->second;
-
-                    switch (opcodeHandler.cond)
-                    {
-                        case Condition::NONE:
-                            break;
-
-                        case Condition::ALIVE:
-                            if (!recv.client->entity() || !static_cast<Entity*>(recv.client->entity())->isAlive())
-                            {
-                                stopHandling = true;
-                                recv.client->close();
-                            }
-                            break;
-                    }
-
-                    if (!stopHandling && opcodeHandler.type != HandlerType::NO_CALLBACK)
-                    {
-                        (this->*opcodeHandler.callback)(recv.client, recv.packet);
-                    }
-                }
-
-
-                // Back to the pool
-                recv.packet->destroy();
-            }
-            else
-            {
-                LOG(LOG_FATAL, "Should not happen to have a broadcast while not in map");
-            }
-        }
-        );
-
-        // Consume scheduled tasks
-        _syncQueue.consume_all([this](auto func)
-            {
-                func(this);
-            }
-        );
-
-        // Last, server wide operations (ie. accept/close clients)
-        runScheduledOperations();
-
-        // Now cleanup map
-        map()->cleanup(diff.count());
-
-        // Wait for a constant update time
-        if (diff <= WORLD_HEART_BEAT + prevSleepTime)
-        {
-            prevSleepTime = WORLD_HEART_BEAT + prevSleepTime - diff;
-            std::this_thread::sleep_for(prevSleepTime);
-        }
-        else
-        {
-            prevSleepTime = prevSleepTime.zero();
-        }
-
-        LOG(LOG_SERVER_LOOP, "DIFF: %" PRId64 " - SLEEP: %" PRId64, diff.count(), prevSleepTime.count());
     }
 }
 
-void AuraServer::handleForwardChange(Client* client, Packet* packet)
+bool AuraServer::handleForwardChange(ClientWork* work)
 {
+    Client* client = work->executor();
+    Packet* packet = work->packet();
+
     float speed = packet->read<float>();
     auto motionMaster = client->entity()->motionMaster();
     motionMaster->forward(speed);
@@ -144,8 +74,11 @@ void AuraServer::handleForwardChange(Client* client, Packet* packet)
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
 }
 
-void AuraServer::handleSpeedChange(Client* client, Packet* packet)
+bool AuraServer::handleSpeedChange(ClientWork* work)
 {
+    Client* client = work->executor();
+    Packet* packet = work->packet();
+
     auto motionMaster = client->entity()->motionMaster();
     int8_t speed = packet->read<int8_t>();
 
@@ -165,10 +98,14 @@ void AuraServer::handleSpeedChange(Client* client, Packet* packet)
     }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
+    return true;
 }
 
-void AuraServer::handleFire(Client* client, Packet* packet)
+bool AuraServer::handleFire(ClientWork* work)
 {
+    Client* client = work->executor();
+    Packet* packet = work->packet();
+    
     auto entity = client->entity();
 
     // TODO(gpascualg): Check if it can really fire
@@ -194,8 +131,11 @@ void AuraServer::handleFire(Client* client, Packet* packet)
 
         default:
             // TODO(gpascualg): Disconnect client :D
+            return false;
             break;
     }
+
+    return true;
 }
 
 void AuraServer::handleCanonFire(Client* client, Packet* packet)
@@ -339,7 +279,9 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // Real bounding box sizes
     client->entity()->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
 
+    // Set client in world
     map()->addTo(client->entity(), nullptr);
+    client->status(Client::Status::IN_WORLD);
 
     // TODO(gpascualg): Fetch from DB
     // TODO(gpascualg): Move out of here
@@ -417,10 +359,56 @@ void AuraServer::handleRead(Client* client, const boost::system::error_code& err
 
             LOG(LOG_PACKET_RECV, "[PACKET DONE]");
 
-            _packets.push({
-                Packet::copy(client->packet(), client->packet()->size()),
-                client
-            });
+            // Check if packet is valid
+            if (client->inMap())
+            {
+                // Read packet
+                uint16_t opcode = client->packet()->read<uint16_t>();
+                uint16_t len = client->packet()->read<uint16_t>();
+
+                auto handler = _handlers.find((PacketOpcodes)opcode);
+                if (handler == _handlers.end())
+                {
+                    client->close();
+                }
+                else
+                {
+                    auto& opcodeHandler = handler->second;
+
+                    switch (opcodeHandler.cond)
+                    {
+                        case Condition::NONE:
+                            break;
+
+                        case Condition::ALIVE:
+                            if (!client->entity() || !static_cast<Entity*>(client->entity())->isAlive())
+                            {
+                                client->close();
+                            }
+                            break;
+                    }
+
+                    if (client->status() != Client::Status::CLOSED && opcodeHandler.type != HandlerType::NO_CALLBACK)
+                    {
+                        // Copy packet and craete work-task
+                        auto packet = Packet::copy(client->packet(), client->packet()->size());
+                        ClientWork* work = new ClientWork(opcodeHandler.work, client, packet);
+
+                        if (opcodeHandler.type == HandlerType::ASYNC_CLIENT)
+                        {
+                            client->entity()->schedule(work);
+                        }
+                        else if (opcodeHandler.type == HandlerType::SYNC_SERVER)
+                        {
+                            this->schedule(work);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                LOG(LOG_FATAL, "Should not happen to have a broadcast while not in map");
+            }
         }
 
         client->scheduleRead(len, reset);

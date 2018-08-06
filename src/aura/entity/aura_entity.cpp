@@ -59,7 +59,6 @@ void Entity::die()
 
     schedule([](Executor<ExecutorQueueMax>* executor) {
         auto entity = static_cast<MapAwareEntity*>(executor);
-        
         auto cell = entity->cell();
         cell->map()->removeFrom(cell, entity, nullptr);
 

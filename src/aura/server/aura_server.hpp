@@ -29,10 +29,9 @@ public:
 
     void mainloop();
 
-    void handleForwardChange(Client* client, Packet* packet);
-    void handleSpeedChange(Client* client, Packet* packet);
-
-    void handleFire(Client* client, Packet* packet);
+    bool handleForwardChange(ClientWork* work);
+    bool handleSpeedChange(ClientWork* work);
+    bool handleFire(ClientWork* work);
 
     Client* newClient(boost::asio::io_service* service, uint64_t id) override;
     void destroyClient(Client* client) override;
@@ -61,7 +60,8 @@ protected:
     enum class HandlerType
     {
         NO_CALLBACK,
-        NORMAL
+        ASYNC_CLIENT,
+        SYNC_SERVER
     };
 
     enum class Condition
@@ -72,7 +72,7 @@ protected:
 
     struct OpcodeHandler
     {
-        void (AuraServer::*callback)(Client*, Packet*);
+        ExecutorWork work;
         HandlerType type;
         Condition cond;
     };
