@@ -1,3 +1,4 @@
+#include "framework/framework.hpp"
 #include "map/cell.hpp"
 #include "map/map-cluster/cluster.hpp"
 #include "map/map.hpp"
@@ -30,6 +31,7 @@ int main()
 #endif
 
     Map map;
+    Framework framework({});
     AuraServer server(12345);
 
     server.startAccept();
