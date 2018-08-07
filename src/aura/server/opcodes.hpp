@@ -2,6 +2,9 @@
 
 enum class PacketOpcodes
 {
+    CLIENT_LOGIN =                  0x0F01,
+    CLIENT_LOGIN_RESP =             0x0F02,
+
     ENTITY_SPAWN =                  0x0101,
     ENTITY_DESPAWN =                0x0102,
     FORWARD_CHANGE =                0x0103,

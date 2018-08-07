@@ -44,6 +44,7 @@ template <typename T> using return_t = typename Types<T>::returnType;
 
 void AuraServer::mainloop()
 {
+    _handlers.emplace(PacketOpcodes::CLIENT_LOGIN,      OpcodeHandler { MAKE_HANDLER(handleLogin),          HandlerType::ASYNC_CLIENT,  Condition::NONE });
     _handlers.emplace(PacketOpcodes::SPEED_CHANGE,      OpcodeHandler { MAKE_HANDLER(handleSpeedChange),    HandlerType::ASYNC_CLIENT,  Condition::ALIVE });
     _handlers.emplace(PacketOpcodes::FORWARD_CHANGE,    OpcodeHandler { MAKE_HANDLER(handleForwardChange),  HandlerType::ASYNC_CLIENT,  Condition::ALIVE });
     _handlers.emplace(PacketOpcodes::FIRE_PACKET,       OpcodeHandler { MAKE_HANDLER(handleFire),           HandlerType::ASYNC_CLIENT,  Condition::ALIVE });
@@ -73,6 +74,10 @@ AbstractWork* AuraServer::handleLogin(ClientWork* work)
 
 AbstractWork* AuraServer::loginResult(FutureWork<bool>* work)
 {
+    Packet* packet = Packet::create((uint16_t)PacketOpcodes::CLIENT_LOGIN_RESP);
+    *packet << (uint8_t)work->get();
+    work->executor()->send(packet);
+
     return nullptr;
 }
 

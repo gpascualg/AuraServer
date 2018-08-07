@@ -70,6 +70,7 @@ protected:
     enum class Condition
     {
         NONE,
+        NOT_IN_WORLD,
         ALIVE
     };
 
