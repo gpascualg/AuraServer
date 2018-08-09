@@ -54,6 +54,13 @@ void AuraServer::mainloop()
     while (1)
     {
         update();
+
+        // TODO: Smarter debugging of clients, this is costy!
+        Reactive::get()->clients.clear();
+        for (auto pair : _clients)
+        {
+            Reactive::get()->clients.push_back(pair.second);
+        }
     }
 }
 
