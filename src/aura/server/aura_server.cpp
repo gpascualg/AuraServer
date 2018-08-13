@@ -210,7 +210,32 @@ AbstractWork* AuraServer::onCellLoaded(FutureWork<std::vector<Entity*>>* work)
 }
 
 void AuraServer::onCellDestroyed(Cell* cell)
-{}
+{
+    for (auto pair : cell->entities())
+    {
+        auto entity = static_cast<Entity*>(pair.second);
+        LOG_ASSERT(!entity->client(), "A cell with a client is being deleted");
+
+        bsoncxx::builder::stream::document filter_builder;
+        filter_builder << "_id" << entity->mongoId();
+
+        bsoncxx::builder::stream::document update_builder;
+        update_builder << "$set" << open_document << "map" << open_document
+            << "q" << cell->offset().q()
+            << "r" << cell->offset().r()
+            << "x" << entity->motionMaster()->position().x
+            << "y" << entity->motionMaster()->position().y
+            << "z" << entity->motionMaster()->position().z << close_document << close_document;
+
+        Framework::get()->database()->query<bool>("aura", 
+            [filter_doc = bsoncxx::document::value { filter_builder.view() }, update_doc = bsoncxx::document::value { update_builder.view() }](const mongocxx::database& db) {
+            db["mobs"].update_one(filter_doc.view(), update_doc.view());
+            return true;
+        });
+
+        destroyMapAwareEntity(entity);
+    }
+}
 
 MapAwareEntity* AuraServer::newMapAwareEntity(uint64_t id, Client* client)
 {
