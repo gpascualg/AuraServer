@@ -1,5 +1,6 @@
 #pragma once
 
+#include "debug/debug.hpp"
 
 class Database;
 
@@ -11,7 +12,7 @@ public:
 
     static Framework* get() 
     { 
-        // TODO(gpascualg): Assert _instance is not null (ie. setup has been run)
+        LOG_ASSERT(_instance != nullptr, "No Framework instance has been created");
         return _instance;
     }
 

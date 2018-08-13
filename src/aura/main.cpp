@@ -1,3 +1,4 @@
+#include "database/database.hpp"
 #include "framework/framework.hpp"
 #include "map/cell.hpp"
 #include "map/map-cluster/cluster.hpp"
@@ -30,8 +31,8 @@ int main()
     MoveWindow(console, r.left, r.top, 900, 300, TRUE);
 #endif
 
-    Map map;
-    Framework framework({});
+    Database database({}, 1);
+    Framework framework(&database);
     AuraServer server(12345);
 
     server.startAccept();

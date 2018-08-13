@@ -1,8 +1,9 @@
 #pragma once
 
 #include "defs/common.hpp"
-#include "server/server.hpp"
+#include "defs/traits.hpp"
 #include "defs/atomic_autoincrement.hpp"
+#include "server/server.hpp"
 #include "client/aura_client.hpp"
 #include "entity/aura_entity.hpp"
 #include "opcodes.hpp"
@@ -17,6 +18,7 @@ class Client;
 class MapAwareEntity;
 class Packet;
 
+#define MAKE_HANDLER(x) [this](AbstractWork* w) -> AbstractWork* { return this->x(static_cast<first_agument_t<decltype(&AuraServer::x)>>(w)); }
 
 
 class AuraServer : public Server
@@ -38,6 +40,10 @@ public:
 
     Client* newClient(boost::asio::io_service* service, uint64_t id) override;
     void destroyClient(Client* client) override;
+
+    void onCellCreated(Cell* cell) override;
+    AbstractWork* onCellLoaded(FutureWork<std::vector<Entity*>>* work);
+    void onCellDestroyed(Cell* cell) override;
 
     MapAwareEntity* newMapAwareEntity(uint64_t id, Client* client) override;
     void destroyMapAwareEntity(MapAwareEntity* entity) override;
