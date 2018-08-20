@@ -19,7 +19,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // TODO(gpascualg): Fetch position from DB
     auto motionMaster = client->entity()->motionMaster();
     motionMaster->teleport({ client->id(), 0, 0 });
-    //LOG(LOG_DEBUG, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
+    //LOG(LOG_SPAWNS, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
 
     // Real bounding box sizes
     client->entity()->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });

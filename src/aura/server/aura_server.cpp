@@ -14,7 +14,11 @@
 #include "movement/movement_generator.hpp"
 
 #include <inttypes.h>
+#include <iomanip>
+#include <iostream>
 #include <random>
+#include <sstream>
+#include <string>
 #include <thread>
 
 #include <boost/asio.hpp>
@@ -36,29 +40,26 @@ void AuraServer::mainloop()
     while (1)
     {
         update();
-
-        // TODO: Smarter debugging of clients, this is costy!
-        Reactive::get()->clients.clear();
-        for (auto pair : _clients)
-        {
-            Reactive::get()->clients.push_back(pair.second);
-        }
     }
 }
 
 void AuraServer::handleRead(Client* client, const boost::system::error_code& error, size_t size)
 {
-#if IF_LOG(LOG_PACKET_RECV)
-    if (!error)
+    IF_LOG(LOG_LEVEL_DEBUG, LOG_PACKET_RECV)
     {
-        printf("Recv bytes at [%" PRId64 "] - Size: %d\n", time(NULL), size);
-        for (uint16_t i = 0; i < client->packet()->size(); ++i)
+        if (!error)
         {
-            printf("%.2X ", (uint8_t)client->packet()->data()[i]);
+            std::stringstream ss;
+
+            ss << "Recv bytes at [" << time(NULL) << "] - Size: " << size << "\n";
+            for (uint16_t i = 0; i < client->packet()->size(); ++i)
+            {
+                ss << std::setfill('0') << std::setw(2) << std::hex << (uint8_t)client->packet()->data()[i] << " ";
+            }
+
+            LOG_DEBUG(LOG_PACKET_RECV, "%s", ss.str().c_str());
         }
-        printf("\n");
     }
-#endif
 
     bool disconnect = false;
     uint16_t len = 2;
@@ -245,4 +246,12 @@ MapAwareEntity* AuraServer::newMapAwareEntity(uint64_t id, Client* client)
 void AuraServer::destroyMapAwareEntity(MapAwareEntity* entity)
 {
     _entityPool.destroy(static_cast<Entity*>(entity));
+}
+
+void AuraServer::iterateClients(std::function<void(Client* client)> callback)
+{
+    for (auto pair : _clients)
+    {
+        callback(pair.second);
+    }
 }

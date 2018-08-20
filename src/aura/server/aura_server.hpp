@@ -47,6 +47,7 @@ public:
 
     MapAwareEntity* newMapAwareEntity(uint64_t id, Client* client) override;
     void destroyMapAwareEntity(MapAwareEntity* entity) override;
+    void iterateClients(std::function<void(Client* client)> callback) override;
 
 protected:
     void handleCanonFire(Client* client, Packet* packet);
