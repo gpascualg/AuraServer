@@ -12,6 +12,9 @@ class Entity : public MapAwareEntity
 {
 public:
     using MapAwareEntity::MapAwareEntity;
+
+    Packet* spawnPacket() { return nullptr; };
+    Packet* despawnPacket() { return nullptr; };
 };
 
 int main()
@@ -21,20 +24,9 @@ int main()
 
     Map map;
 
-/*
-    LOG_ALWAYS("TESTING CLUSTER MERGE");
-    map.addTo2D(20, 20, new Entity());
-    map.addTo2D(50, 50, new Entity());
-    map.addTo2D(20, 30, new Entity());
-    map.addTo2D(30, 30, new Entity());
-    map.addTo2D(40, 30, new Entity());
-    map.addTo2D(40, 40, new Entity());
-*/
-
     map.addTo3D({ 0, 0, 0 }, new Entity(0), nullptr);
     for (int k = 1; k <= 1000; k *= 2)
     {
-        LOG_ALWAYS("CREATING");
         for (float x = (float)(-50 * k); x < (float)(50 * k); x += rand() / (float)RAND_MAX * 10)
         {
             for (float y = (float)(-5 * k); y < (float)(5 * k); y += rand() / (float)RAND_MAX * 10)
@@ -45,25 +37,19 @@ int main()
 
         map.runScheduledOperations();
 
-        LOG_ALWAYS("UPDATING %d CELLS", map.size());
         {
             auto t0 = Time::now();
             map.cluster()->update(0);
             auto t1 = Time::now();
-
-            LOG_ALWAYS("\tDONE IN %f",  std::chrono::duration_cast<ns>(t1 - t0).count() / 1000000.0f);
         }
     }
 
     for (int i = 0; i < 10; ++i)
     {
-        LOG_ALWAYS("UPDATING %d CELLS", map.size());
         {
             auto t0 = Time::now();
             map.cluster()->update(0);
             auto t1 = Time::now();
-
-            LOG_ALWAYS("\tDONE IN %f",  std::chrono::duration_cast<ns>(t1 - t0).count() / 1000000.0f);
         }
     }
 
