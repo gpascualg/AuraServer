@@ -12,22 +12,26 @@
 
 Packet* Entity::spawnPacket()
 {
+    auto& trans = transform();
+
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::ENTITY_SPAWN);
     *packet << id() << uint8_t{ 0 };
-    *packet << motionMaster()->position();
-    *packet << motionMaster()->forward();
-    *packet << (uint8_t)(motionMaster()->speed() * 1000.0f);
+    *packet << trans.Position;
+    *packet << trans.Forward;
+    *packet << (uint8_t)(trans.Speed * 1000.0f);
 
     // Movement generator
-    if (motionMaster()->generator() && motionMaster()->generator()->hasNext())
-    {
-        *packet << (uint8_t)1;
-        *packet << motionMaster()->generator()->packet();
-    }
-    else
-    {
-        *packet << (uint8_t)0;
-    }
+    // TODO(gpascualg): Recode when movement generators are implemented
+    *packet << (uint8_t)0;
+    // if (motionMaster()->generator() && motionMaster()->generator()->hasNext())
+    // {
+    //     *packet << (uint8_t)1;
+    //     *packet << motionMaster()->generator()->packet();
+    // }
+    // else
+    // {
+    //     *packet << (uint8_t)0;
+    // }
 
     return packet;
 }
@@ -52,7 +56,7 @@ void Entity::damage(float amount)
 void Entity::die()
 {
     // Stop any movement
-    motionMaster()->stop(true);
+    _transform.stop(Server::get()->now());
 
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::ENTITY_DIED);
     *broadcast << id();

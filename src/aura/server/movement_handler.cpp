@@ -13,18 +13,19 @@ AbstractWork* AuraServer::handleForwardChange(ClientWork* work)
 {
     Client* client = work->executor();
     Packet* packet = work->packet();
+    auto* entity = client->entity();
 
-    float speed = packet->read<float>();
-    auto motionMaster = client->entity()->motionMaster();
-    motionMaster->forward(speed);
+    float rotation = packet->read<float>();
+    auto& transform = entity->transform();
+    entity->rotate(rotation);
 
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FORWARD_CHANGE_RESP);
     *broadcast << client->id();
-    *broadcast << speed;
+    *broadcast << rotation;
 
-    if (speed == 0)
+    if (rotation == 0)
     {
-        *broadcast << motionMaster->forward();
+        *broadcast << transform.Forward;
     }
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
@@ -35,24 +36,15 @@ AbstractWork* AuraServer::handleSpeedChange(ClientWork* work)
 {
     Client* client = work->executor();
     Packet* packet = work->packet();
+    auto* entity = client->entity();
 
-    auto motionMaster = client->entity()->motionMaster();
+    auto& transform = entity->transform();
     int8_t speed = packet->read<int8_t>();
+    entity->move(speed);
 
     Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::SPEED_CHANGE_RESP);
     *broadcast << client->id() << speed;
-    *broadcast << motionMaster->position();
-
-    motionMaster->speed(speed);
-
-    if (speed != 0)
-    {
-        motionMaster->move();
-    }
-    else
-    {
-        motionMaster->stop();
-    }
+    *broadcast << transform.Position;
 
     Server::map()->broadcastToSiblings(client->entity()->cell(), broadcast);
     return nullptr;

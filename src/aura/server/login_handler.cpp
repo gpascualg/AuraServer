@@ -17,8 +17,7 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     _clients.emplace(client->id(), client);
 
     // TODO(gpascualg): Fetch position from DB
-    auto motionMaster = client->entity()->motionMaster();
-    motionMaster->teleport({ client->id(), 0, 0 });
+    client->entity()->teleport({ client->id(), 0, 0 }, {0, 0, 0});
     //LOG(LOG_SPAWNS, "Entity spawning at %.2f %.2f", motionMaster->position().x, 0);
 
     // Real bounding box sizes
@@ -27,22 +26,6 @@ void AuraServer::handleAccept(Client* client, const boost::system::error_code& e
     // Set client in world
     map()->addTo(client->entity(), nullptr);
     client->status(Client::Status::IN_WORLD);
-
-    // TODO(gpascualg): Fetch from DB
-    // TODO(gpascualg): Move out of here
-    // for (int i = 0; i < 1; ++i)
-    // {
-    //     // TODO(gpascualg): Move this out to somewhere else
-    //     static std::default_random_engine randomEngine;
-    //     static std::uniform_real_distribution<> forwardDist(-1, 1); // rage 0 - 1
-
-    //     MapAwareEntity* entity = newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr);
-    //     entity->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
-    //     entity->motionMaster()->teleport({ 0,0,0 });
-    //     entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
-    //     entity->motionMaster()->generator(new RandomMovement());
-    //     map()->addTo(entity, nullptr);
-    // }
 
     // Send ID
     Packet* packet = Packet::create((uint16_t)PacketOpcodes::SET_ID);

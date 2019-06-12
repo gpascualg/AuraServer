@@ -53,14 +53,14 @@ AbstractWork* AuraServer::handleFire(ClientWork* work)
 void AuraServer::handleCanonFire(Client* client, Packet* packet)
 {
     auto entity = client->entity();
-    auto motionMaster = entity->motionMaster();
-    auto forward = motionMaster->forward();
+    auto& transform = entity->transform();
+    auto& forward = transform.Forward;
 
     // Read which side shoots to
     uint8_t side = packet->read<uint8_t>();
 
     // Default to left side
-    const auto& position2D = entity->motionMaster()->position2D();
+    const auto& position2D = transform.Position2D;
     glm::vec2 fire_direction = { -forward.z, forward.x };
     glm::vec2 forward2D = { forward.x, forward.z };
     if (side == 1)
@@ -97,7 +97,8 @@ void AuraServer::handleCanonFire(Client* client, Packet* packet)
             }
 
             float tmp;
-            if (candidate->boundingBox()->intersects(start, end, &tmp))
+            auto& candTrans = candidate->transform();
+            if (candTrans.BBox->intersects(candTrans.Position2D, start, end, &tmp))
             {
                 if (!minEnt || tmp < minDist)
                 {
@@ -109,7 +110,8 @@ void AuraServer::handleCanonFire(Client* client, Packet* packet)
 
         if (minEnt)
         {
-            LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", minEnt->id(), minEnt->motionMaster()->position().x, minEnt->motionMaster()->position().z);
+            auto& minTrans = minEnt->transform();
+            LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", minEnt->id(), minTrans.Position.x, minTrans.Position.z);
 
             // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
             Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);
@@ -126,8 +128,8 @@ void AuraServer::handleCanonFire(Client* client, Packet* packet)
 void AuraServer::handleMortarFire(Client* client, Packet* packet)
 {
     auto entity = client->entity();
-    auto motionMaster = entity->motionMaster();
-    auto forward = motionMaster->forward();
+    auto& transform = entity->transform();
+    auto& forward = transform.Forward;
 
     // Read direction & radius
     glm::vec2 direction = packet->read<glm::vec2>();
@@ -136,20 +138,20 @@ void AuraServer::handleMortarFire(Client* client, Packet* packet)
     // TODO(gpascualg): Check maximum radius
 
     // Default to left side
-    const auto& position2D = entity->motionMaster()->position2D();
+    const auto& position2D = transform.Position2D;
     LOG(LOG_FIRE_LOGIC_EXT, " + Placed at (%f , %f)", position2D.x, position2D.y);
 
     // Calculate hit point and create a bounding box there
     glm::vec2 hitPoint2D = position2D + direction * radius;
     glm::vec3 hitPoint { hitPoint2D.x, 0, hitPoint2D.y };
-    CircularBoundingBox box(hitPoint, { 0, 0, 0 }, radius);
+    CircularBoundingBox box({0, 0, 0}, radius);
 
     LOG(LOG_FIRE_LOGIC_EXT, "    + Firing to (%f , %f)", hitPoint.x, hitPoint.y);
 
     // TODO(gpascualg): This might not be the best place?
     auto qt = entity->cell()->quadtree();
     std::list<MapAwareEntity*> entities;
-    qt->retrieve(entities, box.asRect());
+    qt->retrieve(entities, box.rect(hitPoint));
 
     LOG(LOG_FIRE_LOGIC_EXT, "      + Number of candidates %" PRIuPTR, entities.size());
 
@@ -160,9 +162,10 @@ void AuraServer::handleMortarFire(Client* client, Packet* packet)
             continue;
         }
 
-        if (SAT::get()->collides(candidate->boundingBox(), &box))
+        auto& candTrans = candidate->transform();
+        if (SAT::get()->collides(candTrans.BBox, candTrans.Position2D, &box, hitPoint2D))
         {
-            LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", candidate->id(), candidate->motionMaster()->position().x, candidate->motionMaster()->position().z);
+            LOG(LOG_FIRE_LOGIC, "Hit %" PRId64 " at (%f, %f)", candidate->id(), candTrans.Position.x, candTrans.Position.z);
 
             // TODO(gpascualg): This should aggregate number of hits per target, and set correct id
             Packet* broadcast = Packet::create((uint16_t)PacketOpcodes::FIRE_HIT);

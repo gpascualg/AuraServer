@@ -5,6 +5,7 @@ if (Shinzui_IS_RESOLVED)
 
     # -[ Unless disabled, add tests
     if (AuraServer_BUILD_TESTS)
-        add_subdirectory(tests)
+        # TODO(gpascualg): REENABLE TESTS
+        # add_subdirectory(tests)
     endif()
 endif()

@@ -25,7 +25,7 @@ foreach (target "AuraServer" "AuraServer_Lib")
     )
     
     # -[ Build executable
-    string(LENGTH ${CMAKE_SOURCE_DIR} BASE_DIR_LEN)
+    string(LENGTH ${CMAKE_CURRENT_SOURCE_DIR} BASE_DIR_LEN)
     AddToDefinitions(
         TARGET ${target}
         DEFINITIONS

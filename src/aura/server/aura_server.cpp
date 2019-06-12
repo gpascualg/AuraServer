@@ -185,9 +185,11 @@ void AuraServer::onCellCreated(Cell* cell)
             Entity* entity = static_cast<Entity*>(newMapAwareEntity(AtomicAutoIncrement<0>::get(), nullptr));
             entity->mongoId(doc["_id"].get_oid());
             entity->setupBoundingBox({ {-4.28, -16}, {-4.28, 14.77}, {4.28, 15.77}, {4.28, -16} });
-            entity->motionMaster()->teleport({ doc["map"]["x"].get_double(), doc["map"]["y"].get_double(), doc["map"]["z"].get_double() });
-            entity->motionMaster()->forward(glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) }));
-            entity->motionMaster()->generator(new RandomMovement());
+
+            glm::vec3 position { doc["map"]["x"].get_double(), doc["map"]["y"].get_double(), doc["map"]["z"].get_double() };
+            glm::vec3 forward = glm::normalize(glm::vec3{ forwardDist(randomEngine), 0, forwardDist(randomEngine) });
+            entity->teleport(position, forward);
+            // entity->motionMaster()->generator(new RandomMovement());
 
             entities.emplace_back(entity);
         }
@@ -220,13 +222,15 @@ void AuraServer::onCellDestroyed(Cell* cell)
         bsoncxx::builder::stream::document filter_builder;
         filter_builder << "_id" << entity->mongoId();
 
+        auto& transform = entity->transform();
+
         bsoncxx::builder::stream::document update_builder;
         update_builder << "$set" << open_document << "map" << open_document
             << "q" << cell->offset().q()
             << "r" << cell->offset().r()
-            << "x" << entity->motionMaster()->position().x
-            << "y" << entity->motionMaster()->position().y
-            << "z" << entity->motionMaster()->position().z << close_document << close_document;
+            << "x" << transform.Position.x
+            << "y" << transform.Position.y
+            << "z" << transform.Position.z << close_document << close_document;
 
         Framework::get()->database()->query<bool>("aura", 
             [filter_doc = bsoncxx::document::value { filter_builder.view() }, update_doc = bsoncxx::document::value { update_builder.view() }](const mongocxx::database& db) {
